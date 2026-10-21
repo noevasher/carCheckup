@@ -1,0 +1,49 @@
+/*
+ * Design tokens: sober, serious-but-friendly palette (Constitution, Principle IV).
+ * Neutral base + one calm navy accent + semantic colors. Contrast targets WCAG AA.
+ */
+:root {
+  color-scheme: light;
+  --color-bg: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef1f5;
+  --color-border: #d6dbe3;
+  --color-text: #17202b;
+  --color-text-muted: #4f5b6b;
+  --color-primary: #1f3a5f;
+  --color-primary-hover: #182e4c;
+  --color-on-primary: #ffffff;
+  --color-focus: #3d7bd9;
+  --color-success: #1d6b57;
+  --color-success-bg: #e3f3ee;
+  --color-warning: #8a5200;
+  --color-warning-bg: #fdf1dc;
+  --color-danger: #b42318;
+  --color-danger-bg: #fdecea;
+  --color-info-bg: #e8eef8;
+  --tap-min: 44px;
+  --radius: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-bg: #0f141b;
+    --color-surface: #171e27;
+    --color-surface-muted: #202935;
+    --color-border: #313c4a;
+    --color-text: #eef2f7;
+    --color-text-muted: #a8b3c2;
+    --color-primary: #8fb3e8;
+    --color-primary-hover: #a9c5ef;
+    --color-on-primary: #0f141b;
+    --color-focus: #8fb3e8;
+    --color-success: #7fd1bb;
+    --color-success-bg: #12302a;
+    --color-warning: #f2c27a;
+    --color-warning-bg: #33260f;
+    --color-danger: #f3a199;
+    --color-danger-bg: #3a1a17;
+    --color-info-bg: #1b2738;
+  }
+}

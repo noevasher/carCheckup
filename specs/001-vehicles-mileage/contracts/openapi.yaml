@@ -1,0 +1,456 @@
+openapi: 3.1.0
+info:
+  title: Car Checkup API — Vehículos y Kilometraje
+  version: 1.0.0
+  description: >
+    Contrato REST de la feature 001-vehicles-mileage. Los tipos TypeScript equivalentes se
+    derivan del esquema Prisma en packages/shared (Principio II); este documento describe la
+    interfaz HTTP. Todos los endpoints requieren `Authorization: Bearer <access token de
+    Supabase>`. Recursos de otro usuario responden 404.
+servers:
+  - url: /v1
+security:
+  - supabaseJwt: []
+
+paths:
+  /me:
+    get:
+      summary: Perfil de la app del usuario autenticado (se crea si no existe)
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      summary: Cambiar el vehículo activo (FR-011)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [activeVehicleId]
+              properties:
+                activeVehicleId: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Perfil actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /vehicles:
+    get:
+      summary: Listar vehículos del usuario con su kilometraje actual (FR-005)
+      responses:
+        '200':
+          description: Lista ordenada por fecha de alta
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Vehicle' }
+    post:
+      summary: Alta de vehículo con su lectura inicial (FR-001, FR-003)
+      description: Crea el vehículo y su lectura INITIAL en una transacción y lo fija como activo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VehicleCreate' }
+      responses:
+        '201':
+          description: Vehículo creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /vehicles/{vehicleId}:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      summary: Detalle de un vehículo
+      responses:
+        '200':
+          description: Vehículo
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      summary: Editar datos del vehículo (FR-012)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VehicleUpdate' }
+      responses:
+        '200':
+          description: Vehículo actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      summary: Eliminar vehículo y su historial (FR-013)
+      responses:
+        '204': { description: Eliminado }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/readings:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+    get:
+      summary: Historial de lecturas, de la más reciente a la más antigua (FR-012)
+      parameters:
+        - name: cursor
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 30 }
+        - name: reviewStatus
+          in: query
+          description: Filtra por estado (p. ej. NEEDS_REVIEW para "Revisa N lecturas")
+          schema: { type: string, enum: [OK, NEEDS_REVIEW] }
+      responses:
+        '200':
+          description: Página de lecturas
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/MileageReading' }
+                  nextCursor: { type: [string, 'null'] }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      summary: Registrar lectura (idempotente por id generado en el cliente) (FR-006..FR-010)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReadingCreate' }
+      responses:
+        '201':
+          description: Lectura creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadingResult' }
+        '200':
+          description: Replay idempotente; la lectura con ese id ya existía con el mismo contenido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadingResult' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: >
+            UNUSUAL_DISTANCE (requiere confirmedUnusual=true) o ID_CONFLICT (el id ya existe con
+            contenido distinto)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: VALIDATION_ERROR o READING_OUT_OF_ORDER (solo origin=ONLINE)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /vehicles/{vehicleId}/readings/{readingId}:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      - name: readingId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Corregir valor o fecha de una lectura (FR-012); si pasa validación queda en OK
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                odometerKm: { type: integer, minimum: 0, maximum: 2000000 }
+                readAt: { type: string, format: date-time }
+                confirmedUnusual: { type: boolean }
+      responses:
+        '200':
+          description: Lectura corregida
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ReadingResult' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      summary: Eliminar una lectura (FR-012)
+      responses:
+        '200':
+          description: Eliminada; devuelve el vehículo con el kilometraje recalculado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: LAST_READING_UNDELETABLE
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /catalog/makes:
+    get:
+      summary: Sugerencias de marcas (FR-002)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1, maxLength: 60 }
+      responses:
+        '200':
+          description: Hasta 10 coincidencias
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CatalogMake' }
+
+  /catalog/makes/{makeId}/models:
+    get:
+      summary: Sugerencias de modelos de una marca (FR-002)
+      parameters:
+        - name: makeId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: q
+          in: query
+          schema: { type: string, maxLength: 60 }
+      responses:
+        '200':
+          description: Hasta 20 coincidencias
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/CatalogModel' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    supabaseJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    VehicleId:
+      name: vehicleId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Token ausente, inválido o expirado
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: No existe o pertenece a otro usuario
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Conflict:
+      description: Conflicto de negocio (ver error.code)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Entrada inválida o lectura fuera de orden
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  schemas:
+    FuelType:
+      type: string
+      enum: [GASOLINE, DIESEL, HYBRID, ELECTRIC]
+    UsageType:
+      type: string
+      enum: [CITY, HIGHWAY, MIXED]
+
+    Profile:
+      type: object
+      required: [id, activeVehicleId]
+      properties:
+        id: { type: string, format: uuid }
+        activeVehicleId: { type: [string, 'null'], format: uuid }
+
+    Vehicle:
+      type: object
+      required: [id, make, model, catalogModelId, year, nickname, licensePlate, fuelType,
+                 usageType, currentOdometerKm, lastReadingAt, pendingReviewCount, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        make: { type: string }
+        model: { type: string }
+        catalogModelId: { type: [string, 'null'], format: uuid }
+        year: { type: integer }
+        nickname: { type: [string, 'null'] }
+        licensePlate: { type: [string, 'null'] }
+        fuelType:
+          oneOf: [{ $ref: '#/components/schemas/FuelType' }, { type: 'null' }]
+        usageType:
+          oneOf: [{ $ref: '#/components/schemas/UsageType' }, { type: 'null' }]
+        currentOdometerKm: { type: integer }
+        lastReadingAt: { type: string, format: date-time }
+        pendingReviewCount:
+          type: integer
+          description: Lecturas en NEEDS_REVIEW que el usuario debe revisar
+        createdAt: { type: string, format: date-time }
+
+    VehicleCreate:
+      type: object
+      required: [make, model, year, odometerKm, initialReadingId]
+      properties:
+        catalogModelId:
+          type: [string, 'null']
+          format: uuid
+          description: Si se envía, make/model se toman del catálogo
+        make: { type: string, minLength: 1, maxLength: 60 }
+        model: { type: string, minLength: 1, maxLength: 60 }
+        year: { type: integer, minimum: 1950, description: '≤ año actual + 1' }
+        odometerKm: { type: integer, minimum: 0, maximum: 2000000 }
+        initialReadingId:
+          type: string
+          format: uuid
+          description: Id generado en el cliente para la lectura INITIAL
+        nickname: { type: [string, 'null'], maxLength: 40 }
+        licensePlate: { type: [string, 'null'], maxLength: 15 }
+        fuelType:
+          oneOf: [{ $ref: '#/components/schemas/FuelType' }, { type: 'null' }]
+        usageType:
+          oneOf: [{ $ref: '#/components/schemas/UsageType' }, { type: 'null' }]
+
+    VehicleUpdate:
+      type: object
+      minProperties: 1
+      description: Mismos campos que VehicleCreate salvo odometerKm e initialReadingId
+      properties:
+        catalogModelId: { type: [string, 'null'], format: uuid }
+        make: { type: string, minLength: 1, maxLength: 60 }
+        model: { type: string, minLength: 1, maxLength: 60 }
+        year: { type: integer, minimum: 1950 }
+        nickname: { type: [string, 'null'], maxLength: 40 }
+        licensePlate: { type: [string, 'null'], maxLength: 15 }
+        fuelType:
+          oneOf: [{ $ref: '#/components/schemas/FuelType' }, { type: 'null' }]
+        usageType:
+          oneOf: [{ $ref: '#/components/schemas/UsageType' }, { type: 'null' }]
+
+    MileageReading:
+      type: object
+      required: [id, vehicleId, odometerKm, readAt, source, origin, reviewStatus, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        vehicleId: { type: string, format: uuid }
+        odometerKm: { type: integer }
+        readAt: { type: string, format: date-time }
+        source: { type: string, enum: [INITIAL, UPDATE] }
+        origin: { type: string, enum: [ONLINE, OFFLINE_SYNC] }
+        reviewStatus: { type: string, enum: [OK, NEEDS_REVIEW] }
+        createdAt: { type: string, format: date-time }
+
+    ReadingCreate:
+      type: object
+      required: [id, odometerKm, readAt, origin]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Generado en el cliente; clave de idempotencia
+        odometerKm: { type: integer, minimum: 0, maximum: 2000000 }
+        readAt:
+          type: string
+          format: date-time
+          description: >
+            Fecha/hora de la lectura fijada en el dispositivo al capturar (forma parte de la
+            clave de idempotencia); no puede ser futura (tolerancia 5 min)
+        origin: { type: string, enum: [ONLINE, OFFLINE_SYNC] }
+        confirmedUnusual: { type: boolean, default: false }
+
+    ReadingResult:
+      type: object
+      required: [reading, vehicle]
+      properties:
+        reading: { $ref: '#/components/schemas/MileageReading' }
+        vehicle: { $ref: '#/components/schemas/Vehicle' }
+
+    CatalogMake:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+
+    CatalogModel:
+      type: object
+      required: [id, makeId, name]
+      properties:
+        id: { type: string, format: uuid }
+        makeId: { type: string, format: uuid }
+        name: { type: string }
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code]
+          properties:
+            code:
+              type: string
+              enum:
+                - UNAUTHORIZED
+                - NOT_FOUND
+                - VALIDATION_ERROR
+                - READING_OUT_OF_ORDER
+                - UNUSUAL_DISTANCE
+                - LAST_READING_UNDELETABLE
+                - ID_CONFLICT
+                - INTERNAL
+            fields:
+              type: object
+              additionalProperties: { type: string }
+              description: Campo → código de validación (el texto visible lo genera la UI)
+            validRange:
+              type: object
+              description: Presente en READING_OUT_OF_ORDER
+              properties:
+                minKm: { type: integer }
+                maxKm: { type: [integer, 'null'] }

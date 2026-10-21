@@ -1,0 +1,397 @@
+make,model
+Alfa Romeo,Giulia
+Alfa Romeo,Giulietta
+Alfa Romeo,MiTo
+Alfa Romeo,Stelvio
+Alfa Romeo,Tonale
+Audi,A1
+Audi,A3
+Audi,A4
+Audi,A5
+Audi,A6
+Audi,e-tron
+Audi,Q2
+Audi,Q3
+Audi,Q5
+Audi,Q7
+Audi,Q8
+Audi,TT
+BAIC,BJ40
+BAIC,D20
+BAIC,X25
+BAIC,X35
+BAIC,X55
+BMW,i3
+BMW,iX
+BMW,Serie 1
+BMW,Serie 2
+BMW,Serie 3
+BMW,Serie 4
+BMW,Serie 5
+BMW,X1
+BMW,X2
+BMW,X3
+BMW,X4
+BMW,X5
+BMW,X6
+BYD,Atto 3
+BYD,Dolphin
+BYD,Dolphin Mini
+BYD,Han
+BYD,Seal
+BYD,Shark
+BYD,Song Plus
+BYD,Tang
+BYD,Yuan Plus
+Changan,Alsvin
+Changan,CS15
+Changan,CS35 Plus
+Changan,CS55 Plus
+Changan,Hunter
+Changan,UNI-T
+Chery,Arrizo 5
+Chery,Tiggo 2
+Chery,Tiggo 4
+Chery,Tiggo 7
+Chery,Tiggo 8
+Chevrolet,Aveo
+Chevrolet,Beat
+Chevrolet,Blazer
+Chevrolet,Camaro
+Chevrolet,Captiva
+Chevrolet,Cavalier
+Chevrolet,Colorado
+Chevrolet,Cruze
+Chevrolet,Equinox
+Chevrolet,Groove
+Chevrolet,Malibu
+Chevrolet,Onix
+Chevrolet,S10
+Chevrolet,Silverado
+Chevrolet,Sonic
+Chevrolet,Spark
+Chevrolet,Suburban
+Chevrolet,Tahoe
+Chevrolet,Tornado
+Chevrolet,Tracker
+Chevrolet,Trax
+Chrysler,200
+Chrysler,300
+Chrysler,Pacifica
+Chrysler,Town & Country
+Citroën,Berlingo
+Citroën,C-Elysée
+Citroën,C3
+Citroën,C3 Aircross
+Citroën,C4
+Citroën,C4 Cactus
+Citroën,C5 Aircross
+Cupra,Ateca
+Cupra,Born
+Cupra,Formentor
+Cupra,León
+Dacia,Duster
+Dacia,Jogger
+Dacia,Logan
+Dacia,Sandero
+Dacia,Spring
+Dodge,Attitude
+Dodge,Challenger
+Dodge,Charger
+Dodge,Durango
+Dodge,Journey
+Dodge,Neon
+Dodge,Ram 700
+DS,DS 3
+DS,DS 4
+DS,DS 7
+Fiat,500
+Fiat,Argo
+Fiat,Cronos
+Fiat,Ducato
+Fiat,Fiorino
+Fiat,Mobi
+Fiat,Palio
+Fiat,Panda
+Fiat,Pulse
+Fiat,Strada
+Fiat,Tipo
+Fiat,Toro
+Fiat,Uno
+Ford,Bronco
+Ford,Bronco Sport
+Ford,EcoSport
+Ford,Edge
+Ford,Escape
+Ford,Explorer
+Ford,F-150
+Ford,Fiesta
+Ford,Figo
+Ford,Focus
+Ford,Fusion
+Ford,Ka
+Ford,Kuga
+Ford,Lobo
+Ford,Maverick
+Ford,Mustang
+Ford,Puma
+Ford,Ranger
+Ford,Territory
+Ford,Transit
+Geely,Coolray
+Geely,Emgrand
+Geely,Geometry C
+Geely,Okavango
+GMC,Acadia
+GMC,Sierra
+GMC,Terrain
+GMC,Yukon
+Great Wall,Poer
+Great Wall,Wingle
+Haval,H6
+Haval,Jolion
+Honda,Accord
+Honda,BR-V
+Honda,City
+Honda,Civic
+Honda,CR-V
+Honda,Fit
+Honda,HR-V
+Honda,Odyssey
+Honda,Pilot
+Honda,WR-V
+Hyundai,Accent
+Hyundai,Creta
+Hyundai,Elantra
+Hyundai,Grand i10
+Hyundai,i10
+Hyundai,i20
+Hyundai,i30
+Hyundai,Ioniq 5
+Hyundai,Kona
+Hyundai,Santa Fe
+Hyundai,Sonata
+Hyundai,Tucson
+Hyundai,Venue
+Infiniti,Q50
+Infiniti,QX50
+Infiniti,QX60
+JAC,J7
+JAC,JS2
+JAC,JS4
+JAC,Sei2
+JAC,Sei4
+JAC,T8
+Jeep,Cherokee
+Jeep,Commander
+Jeep,Compass
+Jeep,Gladiator
+Jeep,Grand Cherokee
+Jeep,Renegade
+Jeep,Wrangler
+Kia,Carnival
+Kia,Ceed
+Kia,EV6
+Kia,K3
+Kia,Niro
+Kia,Picanto
+Kia,Rio
+Kia,Seltos
+Kia,Sorento
+Kia,Soul
+Kia,Sportage
+Kia,Stonic
+Land Rover,Defender
+Land Rover,Discovery
+Land Rover,Discovery Sport
+Land Rover,Range Rover
+Land Rover,Range Rover Evoque
+Land Rover,Range Rover Sport
+Lexus,ES
+Lexus,IS
+Lexus,NX
+Lexus,RX
+Lexus,UX
+Mazda,CX-3
+Mazda,CX-30
+Mazda,CX-5
+Mazda,CX-50
+Mazda,CX-60
+Mazda,CX-9
+Mazda,CX-90
+Mazda,Mazda 2
+Mazda,Mazda 3
+Mazda,Mazda 6
+Mazda,MX-5
+Mercedes-Benz,CLA
+Mercedes-Benz,Clase A
+Mercedes-Benz,Clase B
+Mercedes-Benz,Clase C
+Mercedes-Benz,Clase E
+Mercedes-Benz,Clase G
+Mercedes-Benz,GLA
+Mercedes-Benz,GLB
+Mercedes-Benz,GLC
+Mercedes-Benz,GLE
+Mercedes-Benz,Sprinter
+Mercedes-Benz,Vito
+MG,MG GT
+MG,MG HS
+MG,MG RX5
+MG,MG ZS
+MG,MG3
+MG,MG4
+MG,MG5
+MINI,Clubman
+MINI,Cooper
+MINI,Countryman
+Mitsubishi,ASX
+Mitsubishi,Eclipse Cross
+Mitsubishi,L200
+Mitsubishi,Lancer
+Mitsubishi,Mirage
+Mitsubishi,Montero
+Mitsubishi,Outlander
+Mitsubishi,Xpander
+Nissan,Altima
+Nissan,Frontier
+Nissan,Juke
+Nissan,Kicks
+Nissan,Leaf
+Nissan,March
+Nissan,Micra
+Nissan,Murano
+Nissan,Navara
+Nissan,NP300
+Nissan,Pathfinder
+Nissan,Qashqai
+Nissan,Sentra
+Nissan,Tiida
+Nissan,Versa
+Nissan,X-Trail
+Opel,Astra
+Opel,Corsa
+Opel,Crossland
+Opel,Grandland
+Opel,Mokka
+Peugeot,108
+Peugeot,2008
+Peugeot,208
+Peugeot,3008
+Peugeot,301
+Peugeot,308
+Peugeot,408
+Peugeot,5008
+Peugeot,508
+Peugeot,Partner
+Peugeot,Rifter
+Porsche,911
+Porsche,Cayenne
+Porsche,Macan
+Porsche,Panamera
+Porsche,Taycan
+RAM,1500
+RAM,2500
+RAM,700
+RAM,ProMaster
+Renault,Arkana
+Renault,Austral
+Renault,Captur
+Renault,Clio
+Renault,Duster
+Renault,Kangoo
+Renault,Koleos
+Renault,Kwid
+Renault,Logan
+Renault,Megane
+Renault,Oroch
+Renault,Sandero
+Renault,Stepway
+Renault,Twingo
+Renault,Zoe
+SEAT,Alhambra
+SEAT,Arona
+SEAT,Ateca
+SEAT,Ibiza
+SEAT,León
+SEAT,Mii
+SEAT,Tarraco
+SEAT,Toledo
+Smart,#1
+Smart,forfour
+Smart,fortwo
+SsangYong,Korando
+SsangYong,Rexton
+SsangYong,Tivoli
+Subaru,Crosstrek
+Subaru,Forester
+Subaru,Impreza
+Subaru,Outback
+Subaru,XV
+Suzuki,Baleno
+Suzuki,Celerio
+Suzuki,Ciaz
+Suzuki,Ertiga
+Suzuki,Ignis
+Suzuki,Jimny
+Suzuki,S-Cross
+Suzuki,Swift
+Suzuki,Vitara
+Tesla,Model 3
+Tesla,Model S
+Tesla,Model X
+Tesla,Model Y
+Toyota,4Runner
+Toyota,Avanza
+Toyota,C-HR
+Toyota,Camry
+Toyota,Corolla
+Toyota,Corolla Cross
+Toyota,Hiace
+Toyota,Highlander
+Toyota,Hilux
+Toyota,Land Cruiser
+Toyota,Prius
+Toyota,Raize
+Toyota,RAV4
+Toyota,Sequoia
+Toyota,Sienna
+Toyota,Tacoma
+Toyota,Tundra
+Toyota,Yaris
+Toyota,Yaris Cross
+Volkswagen,Amarok
+Volkswagen,Arteon
+Volkswagen,Gol
+Volkswagen,Golf
+Volkswagen,ID.3
+Volkswagen,ID.4
+Volkswagen,Jetta
+Volkswagen,Nivus
+Volkswagen,Passat
+Volkswagen,Polo
+Volkswagen,Saveiro
+Volkswagen,T-Cross
+Volkswagen,T-Roc
+Volkswagen,Taigo
+Volkswagen,Taos
+Volkswagen,Tiguan
+Volkswagen,Touareg
+Volkswagen,Touran
+Volkswagen,Up!
+Volkswagen,Vento
+Volkswagen,Virtus
+Volvo,EX30
+Volvo,S60
+Volvo,S90
+Volvo,V60
+Volvo,XC40
+Volvo,XC60
+Volvo,XC90
+Škoda,Fabia
+Škoda,Kamiq
+Škoda,Karoq
+Škoda,Kodiaq
+Škoda,Octavia
+Škoda,Scala
+Škoda,Superb

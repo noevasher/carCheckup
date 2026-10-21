@@ -1,0 +1,116 @@
+// Source of truth for data types (Constitution, Principle II).
+// The generated client is written to packages/shared so the frontend can `import type` from it.
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../../packages/shared/src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = ""
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum FuelType {
+  GASOLINE
+  DIESEL
+  HYBRID
+  ELECTRIC
+}
+
+enum UsageType {
+  CITY
+  HIGHWAY
+  MIXED
+}
+
+enum ReadingSource {
+  INITIAL
+  UPDATE
+}
+
+enum ReadingOrigin {
+  ONLINE
+  OFFLINE_SYNC
+}
+
+enum ReviewStatus {
+  OK
+  NEEDS_REVIEW
+}
+
+/// Application data for an authenticated Supabase user (id = auth.users.id = JWT `sub`).
+model Profile {
+  id              String    @id @db.Uuid
+  activeVehicleId String?   @unique @map("active_vehicle_id") @db.Uuid
+  activeVehicle   Vehicle?  @relation("ActiveVehicle", fields: [activeVehicleId], references: [id], onDelete: SetNull)
+  vehicles        Vehicle[] @relation("OwnedVehicles")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("profiles")
+}
+
+model Vehicle {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  user              Profile          @relation("OwnedVehicles", fields: [userId], references: [id], onDelete: Cascade)
+  make              String           @db.VarChar(60)
+  model             String           @db.VarChar(60)
+  catalogModelId    String?          @map("catalog_model_id") @db.Uuid
+  catalogModel      CatalogModel?    @relation(fields: [catalogModelId], references: [id], onDelete: SetNull)
+  year              Int
+  nickname          String?          @db.VarChar(40)
+  licensePlate      String?          @map("license_plate") @db.VarChar(15)
+  fuelType          FuelType?        @map("fuel_type")
+  usageType         UsageType?       @map("usage_type")
+  /// Denormalized from the latest OK reading (research R7).
+  currentOdometerKm Int              @map("current_odometer_km")
+  /// Denormalized from the latest OK reading (research R7).
+  lastReadingAt     DateTime         @map("last_reading_at") @db.Timestamptz(3)
+  readings          MileageReading[]
+  activeFor         Profile?         @relation("ActiveVehicle")
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([userId, createdAt])
+  @@map("vehicles")
+}
+
+model MileageReading {
+  /// Generated on the client; idempotency key (research R5).
+  id               String        @id @db.Uuid
+  vehicleId        String        @map("vehicle_id") @db.Uuid
+  vehicle          Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  odometerKm       Int           @map("odometer_km")
+  readAt           DateTime      @map("read_at") @db.Timestamptz(3)
+  source           ReadingSource
+  origin           ReadingOrigin
+  reviewStatus     ReviewStatus  @default(OK) @map("review_status")
+  confirmedUnusual Boolean       @default(false) @map("confirmed_unusual")
+  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([vehicleId, readAt(sort: Desc)])
+  @@map("mileage_readings")
+}
+
+model CatalogMake {
+  id     String         @id @default(uuid()) @db.Uuid
+  name   String         @unique @db.VarChar(60)
+  models CatalogModel[]
+
+  @@map("catalog_makes")
+}
+
+model CatalogModel {
+  id       String      @id @default(uuid()) @db.Uuid
+  makeId   String      @map("make_id") @db.Uuid
+  make     CatalogMake @relation(fields: [makeId], references: [id], onDelete: Cascade)
+  name     String      @db.VarChar(60)
+  vehicles Vehicle[]
+
+  @@unique([makeId, name])
+  @@map("catalog_models")
+}

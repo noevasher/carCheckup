@@ -1,0 +1,25 @@
+{
+  "name": "@car-checkup/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./dto": "./src/dto/index.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./validation": "./src/validation/index.ts",
+    "./errors": "./src/errors.ts",
+    "./prisma": "./src/generated/prisma/client.ts",
+    "./prisma/enums": "./src/generated/prisma/enums.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@prisma/client": "7.10.1",
+    "zod": "^4.3.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.0"
+  }
+}

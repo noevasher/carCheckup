@@ -6,4 +6,20 @@ const EnvSchema = z.object({
   VITE_API_URL: z.url(),
 });
 
-export const env = EnvSchema.parse(import.meta.env);
+/** Thrown when frontend/.env is missing or invalid; main.tsx renders it instead of a blank page. */
+export class EnvConfigError extends Error {
+  constructor(readonly variables: string[]) {
+    super(`Missing or invalid environment variables: ${variables.join(', ')}`);
+    this.name = 'EnvConfigError';
+  }
+}
+
+function loadEnv() {
+  const parsed = EnvSchema.safeParse(import.meta.env);
+  if (!parsed.success) {
+    throw new EnvConfigError([...new Set(parsed.error.issues.map((i) => String(i.path[0])))]);
+  }
+  return parsed.data;
+}
+
+export const env = loadEnv();

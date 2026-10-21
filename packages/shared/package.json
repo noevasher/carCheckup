@@ -9,7 +9,8 @@
     "./validation": "./src/validation/index.ts",
     "./errors": "./src/errors.ts",
     "./prisma": "./src/generated/prisma/client.ts",
-    "./prisma/enums": "./src/generated/prisma/enums.ts"
+    "./prisma/enums": "./src/generated/prisma/enums.ts",
+    "./maintenance": "./src/maintenance/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

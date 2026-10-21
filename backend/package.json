@@ -12,7 +12,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:recompute-maintenance": "tsx --env-file-if-exists=.env prisma/seed/recompute-all.ts"
   },
   "dependencies": {
     "@car-checkup/shared": "*",

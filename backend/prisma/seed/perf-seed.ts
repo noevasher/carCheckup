@@ -6,8 +6,10 @@ import { randomUUID } from 'node:crypto';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@car-checkup/shared/prisma';
 import 'dotenv/config';
+import { recomputeVehicleMaintenance } from '../../src/modules/maintenance/recompute';
 
 const VEHICLES = 20;
+const SERVICES_PER_VEHICLE = 10;
 const READINGS_PER_VEHICLE = 1000;
 const DAY_MS = 86_400_000;
 
@@ -30,7 +32,7 @@ async function main(): Promise<void> {
     }));
     const last = readings.at(-1);
     if (last === undefined) continue;
-    await prisma.vehicle.create({
+    const vehicle = await prisma.vehicle.create({
       data: {
         userId,
         make: 'Perf',
@@ -41,8 +43,23 @@ async function main(): Promise<void> {
         readings: { createMany: { data: readings } },
       },
     });
+    // Feature 002: services spread over the history, then the persisted estimates.
+    for (let k = 1; k <= SERVICES_PER_VEHICLE; k += 1) {
+      const r = readings[Math.floor((k * READINGS_PER_VEHICLE) / (SERVICES_PER_VEHICLE + 1))];
+      if (r === undefined) continue;
+      await prisma.serviceRecord.create({
+        data: {
+          id: randomUUID(),
+          vehicleId: vehicle.id,
+          performedAt: r.readAt,
+          odometerKm: r.odometerKm,
+          items: { createMany: { data: [{ typeCode: 'OIL_CHANGE' }, { typeCode: 'TIRE_ROTATION' }] } },
+        },
+      });
+    }
+    await prisma.$transaction((tx) => recomputeVehicleMaintenance(tx, vehicle.id));
   }
-  console.log(`Seeded user ${userId}: ${String(VEHICLES)} vehicles × ${String(READINGS_PER_VEHICLE)} readings`);
+  console.log(`Seeded user ${userId}: ${String(VEHICLES)} vehicles × ${String(READINGS_PER_VEHICLE)} readings + ${String(SERVICES_PER_VEHICLE)} services`);
 }
 
 main()

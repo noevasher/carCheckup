@@ -2,6 +2,7 @@ import { VehicleCreateSchema, VehicleUpdateSchema } from '@car-checkup/shared/sc
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireUserId } from '../../middleware/auth';
+import { requestClock } from '../../middleware/timezone';
 import { parseInput } from '../../middleware/validate';
 import {
   createVehicle,
@@ -16,24 +17,24 @@ export const VehicleParams = z.object({ vehicleId: z.uuid() });
 export const vehiclesRouter = Router();
 
 vehiclesRouter.get('/vehicles', async (req, res) => {
-  res.json({ items: await listVehicles(requireUserId(req)) });
+  res.json({ items: await listVehicles(requireUserId(req), requestClock(req)) });
 });
 
 vehiclesRouter.post('/vehicles', async (req, res) => {
   const input = parseInput(VehicleCreateSchema, req.body);
-  const { vehicle } = await createVehicle(requireUserId(req), input);
+  const { vehicle } = await createVehicle(requireUserId(req), input, requestClock(req));
   res.status(201).json(vehicle);
 });
 
 vehiclesRouter.get('/vehicles/:vehicleId', async (req, res) => {
   const { vehicleId } = parseInput(VehicleParams, req.params);
-  res.json(await getVehicle(requireUserId(req), vehicleId));
+  res.json(await getVehicle(requireUserId(req), vehicleId, requestClock(req)));
 });
 
 vehiclesRouter.patch('/vehicles/:vehicleId', async (req, res) => {
   const { vehicleId } = parseInput(VehicleParams, req.params);
   const input = parseInput(VehicleUpdateSchema, req.body);
-  res.json(await updateVehicle(requireUserId(req), vehicleId, input));
+  res.json(await updateVehicle(requireUserId(req), vehicleId, input, requestClock(req)));
 });
 
 vehiclesRouter.delete('/vehicles/:vehicleId', async (req, res) => {

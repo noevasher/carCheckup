@@ -41,6 +41,18 @@ export const router = createBrowserRouter([
                 }),
               },
               {
+                path: '/vehicles/:id/maintenance',
+                lazy: async () => ({
+                  Component: (await import('../features/maintenance/MaintenanceDetailPage')).MaintenanceDetailPage,
+                }),
+              },
+              {
+                path: '/vehicles/:id/services',
+                lazy: async () => ({
+                  Component: (await import('../features/services/ServicesHistoryPage')).ServicesHistoryPage,
+                }),
+              },
+              {
                 path: '/vehicles/:id/history',
                 lazy: async () => ({
                   Component: (await import('../features/readings/HistoryPage')).HistoryPage,

@@ -6,6 +6,28 @@ import { t } from '../../i18n/es';
 export const vehicleTitle = (v: Pick<VehicleDto, 'nickname' | 'make' | 'model'>): string =>
   v.nickname ?? `${v.make} ${v.model}`;
 
+/** Maintenance marker on a vehicle chip (feature 002, FR-007b). */
+function MaintenanceBadge({ summary }: { summary: VehicleDto['maintenance'] }) {
+  if (summary.overdueCount > 0) {
+    const label = t.vehicle.badgeOverdue(summary.overdueCount);
+    return (
+      <span
+        role="img"
+        aria-label={label}
+        title={label}
+        className="inline-flex min-w-5 items-center justify-center rounded-full bg-danger px-1.5 text-xs font-bold text-white"
+      >
+        {summary.overdueCount}
+      </span>
+    );
+  }
+  if (summary.upcomingCount > 0) {
+    const label = t.vehicle.badgeUpcoming(summary.upcomingCount);
+    return <span role="img" aria-label={label} title={label} className="size-2.5 rounded-full bg-warning" />;
+  }
+  return null;
+}
+
 /** One tap switches the active vehicle (FR-011); scrolls horizontally for many vehicles. */
 export function VehicleSwitcher({
   vehicles,
@@ -30,11 +52,12 @@ export function VehicleSwitcher({
                   onSelect(v.id);
                 }}
                 className={cx(
-                  'min-h-tap max-w-48 truncate rounded-full border px-4 font-medium',
+                  'inline-flex min-h-tap max-w-56 items-center gap-2 rounded-full border px-4 font-medium',
                   active ? 'border-primary bg-primary text-on-primary' : 'border-border bg-surface',
                 )}
               >
-                {vehicleTitle(v)}
+                <span className="truncate">{vehicleTitle(v)}</span>
+                <MaintenanceBadge summary={v.maintenance} />
               </button>
             </li>
           );

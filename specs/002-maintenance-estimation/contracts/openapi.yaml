@@ -1,0 +1,332 @@
+openapi: 3.1.0
+info:
+  title: Car Checkup API — Mantenimiento
+  version: 1.0.0
+  description: >
+    Endpoints de la feature 002-maintenance-estimation. Complementa
+    specs/001-vehicles-mileage/contracts/openapi.yaml (mismo servidor, auth y formato de error).
+    Los tipos TypeScript se derivan del esquema Prisma en packages/shared (Principio II).
+    Recursos de otro usuario responden 404.
+servers:
+  - url: /v1
+security:
+  - supabaseJwt: []
+
+paths:
+  /vehicles:
+    get:
+      summary: (Cambio respecto a 001) cada vehículo incluye `maintenance` con los contadores del selector (FR-007b)
+      parameters:
+        - $ref: '#/components/parameters/Timezone'
+      responses:
+        '200':
+          description: Lista de vehículos; ver VehicleMaintenanceSummary
+
+  /vehicles/{vehicleId}/maintenance:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      - $ref: '#/components/parameters/Timezone'
+    get:
+      summary: Estimaciones de todos los mantenimientos del vehículo (FR-003, FR-008, FR-009)
+      description: >
+        Incluye los mantenimientos aplicables por combustible, activos y desactivados (estos sin
+        estimación). Ordenados por urgencia: vencidos, luego por estimatedDueAt.
+      responses:
+        '200':
+          description: Estimaciones
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VehicleMaintenance' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/maintenance/{typeCode}:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      - $ref: '#/components/parameters/Timezone'
+      - $ref: '#/components/parameters/TypeCode'
+    patch:
+      summary: Configurar un mantenimiento del vehículo (US3, US4, FR-007a, FR-016, FR-018)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MaintenanceSettingUpdate' }
+      responses:
+        '200':
+          description: Mantenimientos del vehículo recalculados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VehicleMaintenance' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /vehicles/{vehicleId}/services:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      - $ref: '#/components/parameters/Timezone'
+    get:
+      summary: Historial de servicios, del más reciente al más antiguo (FR-014)
+      parameters:
+        - { name: cursor, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 30 } }
+      responses:
+        '200':
+          description: Página de servicios
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/ServiceRecord' } }
+                  nextCursor: { type: [string, 'null'] }
+        '404': { $ref: '#/components/responses/NotFound' }
+    post:
+      summary: Registrar un servicio realizado (FR-010..FR-012a); idempotente por id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ServiceCreate' }
+      responses:
+        '201':
+          description: Servicio creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceResult' }
+        '200':
+          description: Replay idempotente
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceResult' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: UNUSUAL_DISTANCE (requiere confirmedUnusual) o ID_CONFLICT
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422':
+          description: VALIDATION_ERROR o READING_OUT_OF_ORDER (con validRange)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /vehicles/{vehicleId}/services/{serviceId}:
+    parameters:
+      - $ref: '#/components/parameters/VehicleId'
+      - $ref: '#/components/parameters/Timezone'
+      - { name: serviceId, in: path, required: true, schema: { type: string, format: uuid } }
+    patch:
+      summary: Corregir un servicio (FR-014)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ServiceUpdate' }
+      responses:
+        '200':
+          description: Servicio corregido
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ServiceResult' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      summary: Eliminar un servicio (FR-014); borra la lectura que creó si sigue vinculada
+      responses:
+        '200':
+          description: Eliminado; devuelve el vehículo y sus mantenimientos recalculados
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [vehicle, maintenance]
+                properties:
+                  vehicle: { $ref: '#/components/schemas/VehicleRef' }
+                  maintenance: { $ref: '#/components/schemas/VehicleMaintenance' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+components:
+  securitySchemes:
+    supabaseJwt: { type: http, scheme: bearer, bearerFormat: JWT }
+
+  parameters:
+    VehicleId:
+      name: vehicleId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Timezone:
+      name: X-Timezone
+      in: header
+      required: false
+      description: Zona horaria IANA del usuario (p. ej. America/Mexico_City); por defecto UTC
+      schema: { type: string, maxLength: 64 }
+    TypeCode:
+      name: typeCode
+      in: path
+      required: true
+      schema: { $ref: '#/components/schemas/MaintenanceTypeCode' }
+
+  responses:
+    NotFound:
+      description: No existe o pertenece a otro usuario
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: Conflicto de negocio (ver error.code)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: Entrada inválida
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    MaintenanceTypeCode:
+      type: string
+      enum: [OIL_CHANGE, ENGINE_AIR_FILTER, CABIN_AIR_FILTER, TIRE_ROTATION, ALIGNMENT_BALANCING,
+             TIRE_REPLACEMENT, BRAKE_INSPECTION, BRAKE_FLUID, COOLANT, SPARK_PLUGS, TIMING_BELT,
+             TRANSMISSION_FLUID, BATTERY_CHECK]
+
+    VehicleMaintenanceSummary:
+      description: Campo `maintenance` añadido a cada Vehicle de 001
+      type: object
+      required: [overdueCount, upcomingCount]
+      properties:
+        overdueCount: { type: integer, description: Vencidos no pospuestos }
+        upcomingCount: { type: integer, description: Próximos no pospuestos }
+
+    VehicleMaintenance:
+      type: object
+      required: [vehicleId, currentOdometerKm, pace, items]
+      properties:
+        vehicleId: { type: string, format: uuid }
+        currentOdometerKm: { type: integer }
+        pace: { $ref: '#/components/schemas/Pace' }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/MaintenanceItem' }
+
+    Pace:
+      type: object
+      required: [kmPerDay, source, usageType]
+      properties:
+        kmPerDay: { type: number }
+        source: { type: string, enum: [READINGS, USAGE_DEFAULT] }
+        usageType:
+          type: [string, 'null']
+          enum: [CITY, HIGHWAY, MIXED, null]
+          description: Uso usado para el promedio cuando source = USAGE_DEFAULT
+        windowDays: { type: [integer, 'null'], description: Días cubiertos por las lecturas usadas }
+
+    MaintenanceItem:
+      type: object
+      required: [typeCode, enabled, status, snoozedUntil, askHistory, interval, baseline, dueKm,
+                 remainingKm, dueByTimeAt, estimatedDueAt, limitingFactor]
+      properties:
+        typeCode: { $ref: '#/components/schemas/MaintenanceTypeCode' }
+        enabled: { type: boolean }
+        status:
+          type: [string, 'null']
+          enum: [OVERDUE, UPCOMING, OK, null]
+          description: null si está desactivado
+        snoozedUntil: { type: [string, 'null'], format: date }
+        askHistory: { type: boolean, description: Ofrecer "Indicar cuándo se hizo" (US3-1) }
+        interval:
+          type: object
+          required: [km, months, source, defaultKm, defaultMonths]
+          properties:
+            km: { type: [integer, 'null'] }
+            months: { type: [integer, 'null'] }
+            source: { type: string, enum: [DEFAULT, CITY_ADJUSTED, CUSTOM] }
+            defaultKm: { type: [integer, 'null'] }
+            defaultMonths: { type: [integer, 'null'] }
+        baseline:
+          type: [object, 'null']
+          required: [source, km, at]
+          properties:
+            source: { type: string, enum: [SERVICE, PRIOR, VEHICLE_REGISTRATION] }
+            km: { type: integer }
+            at: { type: string, format: date-time }
+        dueKm: { type: [integer, 'null'] }
+        remainingKm: { type: [integer, 'null'], description: Negativo = km de retraso }
+        dueByTimeAt: { type: [string, 'null'], format: date-time }
+        estimatedDueAt: { type: [string, 'null'], format: date-time }
+        limitingFactor: { type: [string, 'null'], enum: [KM, TIME, null] }
+
+    MaintenanceSettingUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        enabled: { type: boolean }
+        customIntervalKm: { type: [integer, 'null'], minimum: 500, maximum: 300000 }
+        customIntervalMonths: { type: [integer, 'null'], minimum: 1, maximum: 120 }
+        resetInterval: { type: boolean, description: Volver al recomendado (borra los personalizados) }
+        priorHistory:
+          description: Último servicio previo aproximado, "UNKNOWN" (No lo sé) o null para borrar
+          oneOf:
+            - type: object
+              minProperties: 1
+              properties:
+                km: { type: integer, minimum: 0 }
+                date: { type: string, format: date }
+            - { type: string, enum: [UNKNOWN] }
+            - { type: 'null' }
+        snooze: { type: boolean, description: true = posponer 7 días; false = quitar aplazamiento }
+
+    ServiceCreate:
+      type: object
+      required: [id, performedAt, odometerKm, typeCodes]
+      properties:
+        id: { type: string, format: uuid, description: Generado en el cliente; idempotencia }
+        performedAt: { type: string, format: date-time }
+        odometerKm: { type: integer, minimum: 0, maximum: 2000000 }
+        typeCodes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/MaintenanceTypeCode' }
+        notes: { type: [string, 'null'], maxLength: 500 }
+        confirmedUnusual: { type: boolean, default: false }
+
+    ServiceUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        performedAt: { type: string, format: date-time }
+        odometerKm: { type: integer, minimum: 0, maximum: 2000000 }
+        typeCodes:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/MaintenanceTypeCode' }
+        notes: { type: [string, 'null'], maxLength: 500 }
+        confirmedUnusual: { type: boolean }
+
+    ServiceRecord:
+      type: object
+      required: [id, vehicleId, performedAt, odometerKm, typeCodes, notes, createdReading, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        vehicleId: { type: string, format: uuid }
+        performedAt: { type: string, format: date-time }
+        odometerKm: { type: integer }
+        typeCodes: { type: array, items: { $ref: '#/components/schemas/MaintenanceTypeCode' } }
+        notes: { type: [string, 'null'] }
+        createdReading: { type: boolean, description: Se registró también como lectura (FR-012a) }
+        createdAt: { type: string, format: date-time }
+
+    ServiceResult:
+      type: object
+      required: [service, vehicle, maintenance]
+      properties:
+        service: { $ref: '#/components/schemas/ServiceRecord' }
+        vehicle: { $ref: '#/components/schemas/VehicleRef' }
+        maintenance: { $ref: '#/components/schemas/VehicleMaintenance' }
+
+    VehicleRef:
+      description: Vehicle de 001 (incluye `maintenance` VehicleMaintenanceSummary)
+      type: object
+
+    Error:
+      description: "Mismo formato que 001: { error: { code, fields?, validRange? } }"
+      type: object

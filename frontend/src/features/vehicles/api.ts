@@ -61,6 +61,8 @@ export function useUpdateVehicle(id: string) {
       apiFetch<VehicleDto>(`/v1/vehicles/${id}`, { method: 'PATCH', body: input }),
     onSuccess: (vehicle) => {
       replaceVehicleInCache(queryClient, vehicle);
+      // Fuel type and usage change which maintenance applies (FR-019).
+      void queryClient.invalidateQueries({ queryKey: ['maintenance', vehicle.id] });
     },
   });
 }

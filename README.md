@@ -26,6 +26,15 @@ npm run db:seed -w backend                # catálogo de marcas y modelos
 npm run dev                               # API en :3000 y PWA en :5173
 ```
 
+## Mantenimientos (feature 002)
+
+- El catálogo de 13 mantenimientos se siembra en la migración `*_maintenance` (no en el seed).
+- Endpoints nuevos: `GET /v1/vehicles/{id}/maintenance`, `PATCH /v1/vehicles/{id}/maintenance/{typeCode}`
+  y `GET|POST /v1/vehicles/{id}/services`, `PATCH|DELETE /v1/vehicles/{id}/services/{serviceId}`
+  (ver `specs/002-maintenance-estimation/contracts/openapi.yaml`). El cliente envía `X-Timezone`.
+- **Regla**: después de cualquier migración que cambie `maintenance_types`, ejecuta
+  `npm run db:recompute-maintenance -w backend` para actualizar las estimaciones guardadas.
+
 ## Calidad
 
 ```bash
@@ -35,6 +44,8 @@ npm test            # unit (shared) + integración del API (requiere la BD car_c
 npm run test:e2e    # Playwright en viewport móvil (requiere la BD car_checkup_e2e)
 ```
 
+Aplica las migraciones a esas bases de datos con
+`DATABASE_URL=… DIRECT_URL=… npx prisma migrate deploy` (desde `backend/`).
 Las pruebas de integración usan `TEST_DATABASE_URL` (por defecto
 `postgresql://localhost:5432/car_checkup_test`) y las e2e `E2E_DATABASE_URL` (por defecto
 `car_checkup_e2e`); ambas necesitan las migraciones aplicadas. Las e2e levantan un emulador

@@ -9,7 +9,9 @@ const knownProfiles = new Set<string>();
 
 export async function ensureProfile(userId: string): Promise<void> {
   if (knownProfiles.has(userId)) return;
-  await prisma.profile.upsert({ where: { id: userId }, create: { id: userId }, update: {} });
+  // INSERT … ON CONFLICT DO NOTHING: atomic even when a new user's first requests arrive together
+  // (a Prisma upsert can race and fail with a unique violation).
+  await prisma.profile.createMany({ data: [{ id: userId }], skipDuplicates: true });
   if (knownProfiles.size >= KNOWN_PROFILES_MAX) knownProfiles.clear();
   knownProfiles.add(userId);
 }

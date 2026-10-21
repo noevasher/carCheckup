@@ -32,6 +32,7 @@ export async function createTestContext() {
       get: (path: string) => request.get(path).set(auth),
       post: (path: string, body: object) => request.post(path).set(auth).send(body),
       patch: (path: string, body: object) => request.patch(path).set(auth).send(body),
+      put: (path: string, body: object) => request.put(path).set(auth).send(body),
       delete: (path: string) => request.delete(path).set(auth),
     };
   }

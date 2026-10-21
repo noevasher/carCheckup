@@ -45,6 +45,7 @@ function applyResult(queryClient: QueryClient, vehicle: VehicleDto): void {
     list?.map((v) => (v.id === vehicle.id ? vehicle : v)),
   );
   void queryClient.invalidateQueries({ queryKey: ['readings', vehicle.id] });
+  void queryClient.invalidateQueries({ queryKey: ['maintenance', vehicle.id] });
 }
 
 async function send(item: PendingReading, interactive: boolean): Promise<SendOutcome> {

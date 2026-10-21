@@ -2,6 +2,7 @@ import type { MileageReadingDto, ReadingPageDto, ReadingResultDto, VehicleDto } 
 import type { ReadingUpdateInput } from '@car-checkup/shared/schemas';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../lib/api';
+import { invalidateMaintenance } from '../maintenance/api';
 import { replaceVehicleInCache } from '../vehicles/api';
 
 const PAGE_SIZE = 30;
@@ -36,6 +37,7 @@ export function useUpdateReading(vehicleId: string) {
       }),
     onSuccess: (result) => {
       replaceVehicleInCache(queryClient, result.vehicle);
+      invalidateMaintenance(queryClient, result.vehicle);
       void queryClient.invalidateQueries({ queryKey: ['readings', vehicleId] });
     },
   });
@@ -48,6 +50,7 @@ export function useDeleteReading(vehicleId: string) {
       apiFetch<VehicleDto>(`/v1/vehicles/${vehicleId}/readings/${readingId}`, { method: 'DELETE' }),
     onSuccess: (vehicle) => {
       replaceVehicleInCache(queryClient, vehicle);
+      invalidateMaintenance(queryClient, vehicle);
       void queryClient.invalidateQueries({ queryKey: ['readings', vehicleId] });
     },
   });

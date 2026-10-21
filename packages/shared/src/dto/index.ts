@@ -4,6 +4,21 @@ export type { MileageReadingDto, ReadingResultDto, ReadingPageDto } from './read
 export type { ProfileDto } from './profile';
 export type { CatalogMakeDto, CatalogModelDto, CatalogListDto } from './catalog';
 export type {
+  MaintenanceStatusDto,
+  VehicleMaintenanceSummaryDto,
+  PaceDto,
+  MaintenanceItemDto,
+  VehicleMaintenanceDto,
+  ServiceRecordDto,
+  ServiceResultDto,
+  ServicePageDto,
+} from './maintenance';
+export type {
+  MaintenanceTypeCode,
+  BaselineSource,
+  IntervalSource,
+  PaceSource,
+  LimitingFactor,
   FuelType,
   UsageType,
   ReadingSource,

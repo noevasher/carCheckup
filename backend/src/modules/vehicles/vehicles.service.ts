@@ -1,8 +1,10 @@
 import type { VehicleDto } from '@car-checkup/shared/dto';
 import type { VehicleCreateInput, VehicleUpdateInput } from '@car-checkup/shared/schemas';
+import type { Clock } from '../../lib/clock';
 import { conflict, notFound } from '../../lib/http-error';
 import { prisma, type Tx } from '../../lib/prisma';
-import { pendingReviewCountInclude, toVehicleDto } from './vehicle.mapper';
+import { recomputeVehicleMaintenance } from '../maintenance/recompute';
+import { pendingReviewCountInclude, toVehicleDtos, toVehicleDtoWithSummary } from './vehicle.mapper';
 
 /** Returns catalog make/model names for a catalog model id, or throws 404. */
 async function resolveCatalogNames(
@@ -30,6 +32,7 @@ export interface CreateVehicleResult {
 export async function createVehicle(
   userId: string,
   input: VehicleCreateInput,
+  clock: Clock,
 ): Promise<CreateVehicleResult> {
   const existing = await prisma.mileageReading.findUnique({
     where: { id: input.initialReadingId },
@@ -39,7 +42,7 @@ export async function createVehicle(
     if (existing.vehicle.userId !== userId || existing.source !== 'INITIAL') {
       throw conflict('ID_CONFLICT');
     }
-    return { vehicle: toVehicleDto(existing.vehicle), replayed: true };
+    return { vehicle: await toVehicleDtoWithSummary(prisma, existing.vehicle, clock), replayed: true };
   }
 
   const vehicle = await prisma.$transaction(async (tx) => {
@@ -74,40 +77,42 @@ export async function createVehicle(
       include: pendingReviewCountInclude,
     });
     await tx.profile.update({ where: { id: userId }, data: { activeVehicleId: created.id } });
-    return created;
+    await recomputeVehicleMaintenance(tx, created.id);
+    return toVehicleDtoWithSummary(tx, created, clock);
   });
-  return { vehicle: toVehicleDto(vehicle), replayed: false };
+  return { vehicle, replayed: false };
 }
 
-export async function listVehicles(userId: string): Promise<VehicleDto[]> {
+export async function listVehicles(userId: string, clock: Clock): Promise<VehicleDto[]> {
   const vehicles = await prisma.vehicle.findMany({
     where: { userId },
     orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     include: pendingReviewCountInclude,
   });
-  return vehicles.map(toVehicleDto);
+  return toVehicleDtos(prisma, vehicles, clock);
 }
 
-export async function getVehicle(userId: string, vehicleId: string): Promise<VehicleDto> {
+export async function getVehicle(userId: string, vehicleId: string, clock: Clock): Promise<VehicleDto> {
   const vehicle = await prisma.vehicle.findFirst({
     where: { id: vehicleId, userId },
     include: pendingReviewCountInclude,
   });
   if (vehicle === null) throw notFound();
-  return toVehicleDto(vehicle);
+  return toVehicleDtoWithSummary(prisma, vehicle, clock);
 }
 
 export async function updateVehicle(
   userId: string,
   vehicleId: string,
   input: VehicleUpdateInput,
+  clock: Clock,
 ): Promise<VehicleDto> {
-  const vehicle = await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const owned = await tx.vehicle.findFirst({ where: { id: vehicleId, userId }, select: { id: true } });
     if (owned === null) throw notFound();
     const names =
       input.catalogModelId != null ? await resolveCatalogNames(tx, input.catalogModelId) : null;
-    return tx.vehicle.update({
+    const updated = await tx.vehicle.update({
       where: { id: vehicleId },
       data: {
         ...(input.catalogModelId !== undefined && { catalogModelId: input.catalogModelId }),
@@ -125,8 +130,12 @@ export async function updateVehicle(
       },
       include: pendingReviewCountInclude,
     });
+    // Fuel type and usage change which maintenance applies and its intervals (FR-019).
+    if (input.fuelType !== undefined || input.usageType !== undefined) {
+      await recomputeVehicleMaintenance(tx, vehicleId);
+    }
+    return toVehicleDtoWithSummary(tx, updated, clock);
   });
-  return toVehicleDto(vehicle);
 }
 
 /** Deletes the vehicle and, by cascade, its readings (FR-013). */

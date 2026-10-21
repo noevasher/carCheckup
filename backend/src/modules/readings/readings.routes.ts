@@ -6,6 +6,7 @@ import {
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireUserId } from '../../middleware/auth';
+import { requestClock } from '../../middleware/timezone';
 import { parseInput } from '../../middleware/validate';
 import { VehicleParams } from '../vehicles/vehicles.routes';
 import { createReading, deleteReading, listReadings, updateReading } from './readings.service';
@@ -23,17 +24,17 @@ readingsRouter.get('/vehicles/:vehicleId/readings', async (req, res) => {
 readingsRouter.post('/vehicles/:vehicleId/readings', async (req, res) => {
   const { vehicleId } = parseInput(VehicleParams, req.params);
   const input = parseInput(ReadingCreateSchema, req.body);
-  const { result, replayed } = await createReading(requireUserId(req), vehicleId, input);
+  const { result, replayed } = await createReading(requireUserId(req), vehicleId, input, requestClock(req));
   res.status(replayed ? 200 : 201).json(result);
 });
 
 readingsRouter.patch('/vehicles/:vehicleId/readings/:readingId', async (req, res) => {
   const { vehicleId, readingId } = parseInput(ReadingParams, req.params);
   const input = parseInput(ReadingUpdateSchema, req.body);
-  res.json(await updateReading(requireUserId(req), vehicleId, readingId, input));
+  res.json(await updateReading(requireUserId(req), vehicleId, readingId, input, requestClock(req)));
 });
 
 readingsRouter.delete('/vehicles/:vehicleId/readings/:readingId', async (req, res) => {
   const { vehicleId, readingId } = parseInput(ReadingParams, req.params);
-  res.json(await deleteReading(requireUserId(req), vehicleId, readingId));
+  res.json(await deleteReading(requireUserId(req), vehicleId, readingId, requestClock(req)));
 });

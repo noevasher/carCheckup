@@ -83,6 +83,7 @@ export function HistoryPage() {
                     <p className="text-sm text-text-muted">
                       {formatDate(r.readAt)}
                       {r.source === 'INITIAL' && ` · ${t.history.initial}`}
+                      {r.source === 'SERVICE' && ` · ${t.maintenance.readingSourceService}`}
                     </p>
                     {review && <p className="mt-1 text-sm text-warning">{t.history.needsReviewHint}</p>}
                   </div>

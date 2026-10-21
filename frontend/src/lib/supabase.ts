@@ -7,10 +7,9 @@ const projectRef = new URL(env.VITE_SUPABASE_URL).hostname.split('.')[0] ?? 'loc
 
 const auth = new AuthClient({
   url: `${env.VITE_SUPABASE_URL}/auth/v1`,
-  headers: {
-    apikey: env.VITE_SUPABASE_ANON_KEY,
-    Authorization: `Bearer ${env.VITE_SUPABASE_ANON_KEY}`,
-  },
+  // Works with both the legacy anon key (JWT) and the newer publishable key (sb_publishable_…),
+  // which is not a JWT and must only travel in the apikey header.
+  headers: { apikey: env.VITE_SUPABASE_ANON_KEY },
   // Same key supabase-js uses, so sessions stay compatible.
   storageKey: `sb-${projectRef}-auth-token`,
   persistSession: true,

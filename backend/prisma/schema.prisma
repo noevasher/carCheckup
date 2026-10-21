@@ -28,6 +28,8 @@ enum UsageType {
 enum ReadingSource {
   INITIAL
   UPDATE
+  /// Created when a service was recorded with a higher odometer (feature 002, FR-012a).
+  SERVICE
 }
 
 enum ReadingOrigin {
@@ -38,6 +40,44 @@ enum ReadingOrigin {
 enum ReviewStatus {
   OK
   NEEDS_REVIEW
+}
+
+enum MaintenanceTypeCode {
+  OIL_CHANGE
+  ENGINE_AIR_FILTER
+  CABIN_AIR_FILTER
+  TIRE_ROTATION
+  ALIGNMENT_BALANCING
+  TIRE_REPLACEMENT
+  BRAKE_INSPECTION
+  BRAKE_FLUID
+  COOLANT
+  SPARK_PLUGS
+  TIMING_BELT
+  TRANSMISSION_FLUID
+  BATTERY_CHECK
+}
+
+enum BaselineSource {
+  SERVICE
+  PRIOR
+  VEHICLE_REGISTRATION
+}
+
+enum IntervalSource {
+  DEFAULT
+  CITY_ADJUSTED
+  CUSTOM
+}
+
+enum PaceSource {
+  READINGS
+  USAGE_DEFAULT
+}
+
+enum LimitingFactor {
+  KM
+  TIME
 }
 
 /// Application data for an authenticated Supabase user (id = auth.users.id = JWT `sub`).
@@ -53,26 +93,29 @@ model Profile {
 }
 
 model Vehicle {
-  id                String           @id @default(uuid()) @db.Uuid
-  userId            String           @map("user_id") @db.Uuid
-  user              Profile          @relation("OwnedVehicles", fields: [userId], references: [id], onDelete: Cascade)
-  make              String           @db.VarChar(60)
-  model             String           @db.VarChar(60)
-  catalogModelId    String?          @map("catalog_model_id") @db.Uuid
-  catalogModel      CatalogModel?    @relation(fields: [catalogModelId], references: [id], onDelete: SetNull)
-  year              Int
-  nickname          String?          @db.VarChar(40)
-  licensePlate      String?          @map("license_plate") @db.VarChar(15)
-  fuelType          FuelType?        @map("fuel_type")
-  usageType         UsageType?       @map("usage_type")
+  id                   String                      @id @default(uuid()) @db.Uuid
+  userId               String                      @map("user_id") @db.Uuid
+  user                 Profile                     @relation("OwnedVehicles", fields: [userId], references: [id], onDelete: Cascade)
+  make                 String                      @db.VarChar(60)
+  model                String                      @db.VarChar(60)
+  catalogModelId       String?                     @map("catalog_model_id") @db.Uuid
+  catalogModel         CatalogModel?               @relation(fields: [catalogModelId], references: [id], onDelete: SetNull)
+  year                 Int
+  nickname             String?                     @db.VarChar(40)
+  licensePlate         String?                     @map("license_plate") @db.VarChar(15)
+  fuelType             FuelType?                   @map("fuel_type")
+  usageType            UsageType?                  @map("usage_type")
   /// Denormalized from the latest OK reading (research R7).
-  currentOdometerKm Int              @map("current_odometer_km")
+  currentOdometerKm    Int                         @map("current_odometer_km")
   /// Denormalized from the latest OK reading (research R7).
-  lastReadingAt     DateTime         @map("last_reading_at") @db.Timestamptz(3)
-  readings          MileageReading[]
-  activeFor         Profile?         @relation("ActiveVehicle")
-  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  lastReadingAt        DateTime                    @map("last_reading_at") @db.Timestamptz(3)
+  readings             MileageReading[]
+  activeFor            Profile?                    @relation("ActiveVehicle")
+  services             ServiceRecord[]
+  maintenanceSettings  VehicleMaintenanceSetting[]
+  maintenanceEstimates MaintenanceEstimate[]
+  createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([userId, createdAt])
   @@map("vehicles")
@@ -80,17 +123,18 @@ model Vehicle {
 
 model MileageReading {
   /// Generated on the client; idempotency key (research R5).
-  id               String        @id @db.Uuid
-  vehicleId        String        @map("vehicle_id") @db.Uuid
-  vehicle          Vehicle       @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  odometerKm       Int           @map("odometer_km")
-  readAt           DateTime      @map("read_at") @db.Timestamptz(3)
+  id               String         @id @db.Uuid
+  vehicleId        String         @map("vehicle_id") @db.Uuid
+  vehicle          Vehicle        @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  odometerKm       Int            @map("odometer_km")
+  readAt           DateTime       @map("read_at") @db.Timestamptz(3)
   source           ReadingSource
   origin           ReadingOrigin
-  reviewStatus     ReviewStatus  @default(OK) @map("review_status")
-  confirmedUnusual Boolean       @default(false) @map("confirmed_unusual")
-  createdAt        DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt        DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+  reviewStatus     ReviewStatus   @default(OK) @map("review_status")
+  confirmedUnusual Boolean        @default(false) @map("confirmed_unusual")
+  service          ServiceRecord?
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([vehicleId, readAt(sort: Desc)])
   @@map("mileage_readings")
@@ -113,4 +157,97 @@ model CatalogModel {
 
   @@unique([makeId, name])
   @@map("catalog_models")
+}
+
+/// Maintenance catalog (seeded by migration). User-facing texts live in the frontend by code.
+model MaintenanceType {
+  code                   MaintenanceTypeCode         @id
+  intervalKm             Int?                        @map("interval_km")
+  intervalMonths         Int?                        @map("interval_months")
+  fuelTypes              FuelType[]                  @map("fuel_types")
+  appliesWhenFuelUnknown Boolean                     @map("applies_when_fuel_unknown")
+  severeUsageSensitive   Boolean                     @map("severe_usage_sensitive")
+  sortOrder              Int                         @map("sort_order")
+  settings               VehicleMaintenanceSetting[]
+  serviceItems           ServiceRecordItem[]
+  estimates              MaintenanceEstimate[]
+
+  @@map("maintenance_types")
+}
+
+/// Per-vehicle customization of a maintenance type; no row = defaults.
+model VehicleMaintenanceSetting {
+  vehicleId            String              @map("vehicle_id") @db.Uuid
+  vehicle              Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  typeCode             MaintenanceTypeCode @map("type_code")
+  type                 MaintenanceType     @relation(fields: [typeCode], references: [code])
+  enabled              Boolean             @default(true)
+  customIntervalKm     Int?                @map("custom_interval_km")
+  customIntervalMonths Int?                @map("custom_interval_months")
+  priorKm              Int?                @map("prior_km")
+  priorDate            DateTime?           @map("prior_date") @db.Date
+  priorUnknown         Boolean             @default(false) @map("prior_unknown")
+  snoozedUntil         DateTime?           @map("snoozed_until") @db.Date
+  updatedAt            DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([vehicleId, typeCode])
+  @@map("vehicle_maintenance_settings")
+}
+
+model ServiceRecord {
+  /// Generated on the client; idempotency key.
+  id          String              @id @db.Uuid
+  vehicleId   String              @map("vehicle_id") @db.Uuid
+  vehicle     Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  performedAt DateTime            @map("performed_at") @db.Timestamptz(3)
+  odometerKm  Int                 @map("odometer_km")
+  notes       String?             @db.VarChar(500)
+  /// Reading created by this service (FR-012a).
+  readingId   String?             @unique @map("reading_id") @db.Uuid
+  reading     MileageReading?     @relation(fields: [readingId], references: [id], onDelete: SetNull)
+  items       ServiceRecordItem[]
+  createdAt   DateTime            @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@index([vehicleId, performedAt(sort: Desc)])
+  @@map("service_records")
+}
+
+model ServiceRecordItem {
+  serviceRecordId String              @map("service_record_id") @db.Uuid
+  service         ServiceRecord       @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  typeCode        MaintenanceTypeCode @map("type_code")
+  type            MaintenanceType     @relation(fields: [typeCode], references: [code])
+
+  @@id([serviceRecordId, typeCode])
+  @@index([typeCode, serviceRecordId])
+  @@map("service_record_items")
+}
+
+/// Engine output (research R2): only values that do not depend on "today".
+model MaintenanceEstimate {
+  vehicleId       String              @map("vehicle_id") @db.Uuid
+  vehicle         Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  typeCode        MaintenanceTypeCode @map("type_code")
+  type            MaintenanceType     @relation(fields: [typeCode], references: [code])
+  baselineSource  BaselineSource      @map("baseline_source")
+  baselineKm      Int                 @map("baseline_km")
+  baselineAt      DateTime            @map("baseline_at") @db.Timestamptz(3)
+  intervalKm      Int?                @map("interval_km")
+  intervalMonths  Int?                @map("interval_months")
+  intervalSource  IntervalSource      @map("interval_source")
+  dueKm           Int?                @map("due_km")
+  dueByTimeAt     DateTime?           @map("due_by_time_at") @db.Timestamptz(3)
+  paceKmPerDay    Decimal             @map("pace_km_per_day") @db.Decimal(8, 2)
+  paceSource      PaceSource          @map("pace_source")
+  paceUsageType   UsageType?          @map("pace_usage_type")
+  paceWindowDays  Int?                @map("pace_window_days")
+  estimatedByKmAt DateTime?           @map("estimated_by_km_at") @db.Timestamptz(3)
+  estimatedDueAt  DateTime?           @map("estimated_due_at") @db.Timestamptz(3)
+  limitingFactor  LimitingFactor?     @map("limiting_factor")
+  computedAt      DateTime            @map("computed_at") @db.Timestamptz(3)
+
+  @@id([vehicleId, typeCode])
+  @@index([estimatedDueAt])
+  @@map("maintenance_estimates")
 }

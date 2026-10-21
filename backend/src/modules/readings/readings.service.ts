@@ -8,7 +8,9 @@ import { checkOrder, isFutureDate, isUnusual } from '@car-checkup/shared/validat
 import { env } from '../../config/env';
 import { conflict, notFound, outOfOrder, validationError } from '../../lib/http-error';
 import { prisma, type Tx } from '../../lib/prisma';
-import { pendingReviewCountInclude, toVehicleDto } from '../vehicles/vehicle.mapper';
+import type { Clock } from '../../lib/clock';
+import { recomputeVehicleMaintenance } from '../maintenance/recompute';
+import { pendingReviewCountInclude, toVehicleDtoWithSummary } from '../vehicles/vehicle.mapper';
 import { toReadingDto } from './reading.mapper';
 import { lockVehicle, recalculateVehicleOdometer } from './recalculate';
 
@@ -21,7 +23,7 @@ async function assertVehicleOwned(userId: string, vehicleId: string): Promise<vo
 }
 
 /** Immediate OK neighbors by readAt, using the (vehicle_id, read_at) index. */
-async function loadNeighbors(tx: Tx, vehicleId: string, readAt: Date, excludeId?: string) {
+export async function loadNeighbors(tx: Tx, vehicleId: string, readAt: Date, excludeId?: string) {
   const base = {
     vehicleId,
     reviewStatus: 'OK' as const,
@@ -43,12 +45,18 @@ async function loadNeighbors(tx: Tx, vehicleId: string, readAt: Date, excludeId?
   return { prev, next };
 }
 
-async function loadVehicleDto(tx: Tx, vehicleId: string): Promise<VehicleDto> {
+export async function loadVehicleDto(tx: Tx, vehicleId: string, clock: Clock): Promise<VehicleDto> {
   const vehicle = await tx.vehicle.findUniqueOrThrow({
     where: { id: vehicleId },
     include: pendingReviewCountInclude,
   });
-  return toVehicleDto(vehicle);
+  return toVehicleDtoWithSummary(tx, vehicle, clock);
+}
+
+/** Odometer + maintenance recompute after any reading change (FR-019). */
+async function afterReadingsChanged(tx: Tx, vehicleId: string): Promise<void> {
+  await recalculateVehicleOdometer(tx, vehicleId);
+  await recomputeVehicleMaintenance(tx, vehicleId);
 }
 
 const isUniqueViolation = (err: unknown): boolean =>
@@ -65,11 +73,12 @@ export async function createReading(
   userId: string,
   vehicleId: string,
   input: ReadingCreateInput,
+  clock: Clock,
 ): Promise<CreateReadingResult> {
   await assertVehicleOwned(userId, vehicleId);
   const readAt = new Date(input.readAt);
 
-  const replay = await findReplay(vehicleId, input, readAt);
+  const replay = await findReplay(vehicleId, input, readAt, clock);
   if (replay !== null) return replay;
 
   if (isFutureDate(readAt)) throw validationError({ readAt: 'future' });
@@ -102,14 +111,14 @@ export async function createReading(
           confirmedUnusual: input.confirmedUnusual,
         },
       });
-      await recalculateVehicleOdometer(tx, vehicleId);
-      return { reading: toReadingDto(reading), vehicle: await loadVehicleDto(tx, vehicleId) };
+      await afterReadingsChanged(tx, vehicleId);
+      return { reading: toReadingDto(reading), vehicle: await loadVehicleDto(tx, vehicleId, clock) };
     });
     return { result, replayed: false };
   } catch (err) {
     // Two concurrent requests with the same id: the loser becomes a replay.
     if (isUniqueViolation(err)) {
-      const raced = await findReplay(vehicleId, input, readAt);
+      const raced = await findReplay(vehicleId, input, readAt, clock);
       if (raced !== null) return raced;
     }
     throw err;
@@ -120,6 +129,7 @@ async function findReplay(
   vehicleId: string,
   input: ReadingCreateInput,
   readAt: Date,
+  clock: Clock,
 ): Promise<CreateReadingResult | null> {
   const existing = await prisma.mileageReading.findUnique({ where: { id: input.id } });
   if (existing === null) return null;
@@ -128,7 +138,7 @@ async function findReplay(
     existing.odometerKm === input.odometerKm &&
     existing.readAt.getTime() === readAt.getTime();
   if (!same) throw conflict('ID_CONFLICT');
-  const vehicle = await loadVehicleDto(prisma, vehicleId);
+  const vehicle = await loadVehicleDto(prisma, vehicleId, clock);
   return { result: { reading: toReadingDto(existing), vehicle }, replayed: true };
 }
 
@@ -146,6 +156,7 @@ export async function updateReading(
   vehicleId: string,
   readingId: string,
   input: ReadingUpdateInput,
+  clock: Clock,
 ): Promise<ReadingResultDto> {
   const current = await findOwnedReading(userId, vehicleId, readingId);
   const odometerKm = input.odometerKm ?? current.odometerKm;
@@ -165,8 +176,8 @@ export async function updateReading(
       where: { id: readingId },
       data: { odometerKm, readAt, reviewStatus: 'OK', confirmedUnusual },
     });
-    await recalculateVehicleOdometer(tx, vehicleId);
-    return { reading: toReadingDto(reading), vehicle: await loadVehicleDto(tx, vehicleId) };
+    await afterReadingsChanged(tx, vehicleId);
+    return { reading: toReadingDto(reading), vehicle: await loadVehicleDto(tx, vehicleId, clock) };
   });
 }
 
@@ -175,6 +186,7 @@ export async function deleteReading(
   userId: string,
   vehicleId: string,
   readingId: string,
+  clock: Clock,
 ): Promise<VehicleDto> {
   await findOwnedReading(userId, vehicleId, readingId);
   return prisma.$transaction(async (tx) => {
@@ -191,8 +203,8 @@ export async function deleteReading(
       if (otherOk === 0) throw conflict('LAST_READING_UNDELETABLE');
     }
     await tx.mileageReading.delete({ where: { id: readingId } });
-    await recalculateVehicleOdometer(tx, vehicleId);
-    return loadVehicleDto(tx, vehicleId);
+    await afterReadingsChanged(tx, vehicleId);
+    return loadVehicleDto(tx, vehicleId, clock);
   });
 }
 

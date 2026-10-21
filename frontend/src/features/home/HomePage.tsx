@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router';
 import { Banner, Button, Skeleton } from '../../design/components';
-import { t } from '../../i18n/es';
+import { messageForError, t } from '../../i18n/es';
+import { ApiRequestError } from '../../lib/api';
+import { useAuth } from '../auth/AuthProvider';
 import { formatKm, formatRelativeDay } from '../../lib/format';
 import { usePendingReadings } from '../../offline/sync';
+import { MaintenanceAlerts } from '../maintenance/MaintenanceAlerts';
 import { QuickCaptureSheet } from '../readings/QuickCaptureSheet';
 import { useVehicles } from '../vehicles/api';
 import { useActiveVehicle } from '../vehicles/useActiveVehicle';
@@ -11,6 +14,7 @@ import { vehicleTitle, VehicleSwitcher } from '../vehicles/VehicleSwitcher';
 
 /** Home: active vehicle, current km and the one-tap "Actualizar km" action (FR-005, FR-016). */
 export function HomePage() {
+  const { signOut } = useAuth();
   const vehicles = useVehicles();
   const { active, setActive } = useActiveVehicle(vehicles.data);
   const pending = usePendingReadings(active?.id);
@@ -24,17 +28,26 @@ export function HomePage() {
       </div>
     );
   }
-  if (vehicles.isError) {
+  // With cached data (e.g. offline), keep showing it even if the refresh failed.
+  if (vehicles.data === undefined) {
+    const { error } = vehicles;
+    const sessionRejected = error instanceof ApiRequestError && error.status === 401;
     return (
       <Banner
         tone="danger"
         action={
-          <Button variant="secondary" onClick={() => void vehicles.refetch()}>
-            {t.common.retry}
-          </Button>
+          sessionRejected ? (
+            <Button variant="secondary" onClick={() => void signOut()}>
+              {t.common.signInAgain}
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={() => void vehicles.refetch()}>
+              {t.common.retry}
+            </Button>
+          )
         }
       >
-        {t.common.loadError}
+        {error instanceof ApiRequestError ? messageForError(error.body?.error.code) : t.common.loadError}
       </Banner>
     );
   }
@@ -109,6 +122,8 @@ export function HomePage() {
           </Link>
         </div>
       </article>
+
+      <MaintenanceAlerts key={active.id} vehicle={active} />
 
       <QuickCaptureSheet vehicle={active} open={captureOpen} onOpenChange={setCaptureOpen} />
     </>

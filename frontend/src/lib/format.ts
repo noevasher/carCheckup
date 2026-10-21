@@ -30,3 +30,10 @@ export function dateInputToIso(value: string, now: Date = new Date()): string {
   const [y, m, d] = value.split('-').map(Number);
   return new Date(y ?? 0, (m ?? 1) - 1, d ?? 1, 12, 0, 0).toISOString();
 }
+
+/** Month value (YYYY-MM) → the 15th of that month, or today if that would be in the future. */
+export function monthToDate(month: string, now: Date = new Date()): string {
+  const today = toDateInputValue(now);
+  const mid = `${month}-15`;
+  return mid > today ? today : mid;
+}

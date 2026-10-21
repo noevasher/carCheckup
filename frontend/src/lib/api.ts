@@ -31,6 +31,8 @@ interface ApiFetchInit {
   signal?: AbortSignal;
 }
 
+const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 async function accessToken(): Promise<string | null> {
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? null;
@@ -50,6 +52,8 @@ export async function apiFetch<T>(path: string, init: ApiFetchInit = {}): Promis
       method: init.method ?? 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
+        // "Today" for maintenance status is the user's calendar day (research R7 of 002).
+        'X-Timezone': userTimeZone,
         ...(init.body !== undefined && { 'Content-Type': 'application/json' }),
       },
       ...(init.body !== undefined && { body: JSON.stringify(init.body) }),

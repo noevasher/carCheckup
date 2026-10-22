@@ -56,14 +56,50 @@ Escenarios de validación manual: [`specs/001-vehicles-mileage/quickstart.md`](s
 
 ## Despliegue
 
-- **Frontend (Vercel)**: raíz `frontend`, build `npm run build`, salida `dist`. Variables
-  `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`. Configura el rewrite SPA a
-  `/index.html`.
-- **Backend (Render/Railway/VPS)**: `npm run build -w backend` y `npm run start -w backend`.
-  Antes de arrancar una versión nueva: `npm run db:deploy -w backend`.
-  - `DATABASE_URL`: pooler de Supabase en modo transacción (puerto 6543, `?pgbouncer=true`).
-  - `DIRECT_URL`: conexión directa (5432), usada solo por las migraciones.
-  - `SUPABASE_URL`, `SUPABASE_JWKS_URL` (`<SUPABASE_URL>/auth/v1/.well-known/jwks.json`),
-    `CORS_ORIGIN` (URL del frontend), `UNUSUAL_KM_PER_DAY` (por defecto 1500).
-- **Supabase**: las tablas tienen RLS activado sin políticas; solo el backend (propietario de
-  las tablas) accede a los datos.
+Frontend en **Vercel**, API en **Render** y base de datos y login en **Supabase**. El repo incluye
+`vercel.json` y `render.yaml`, así que solo hay que conectar el repo y pegar las variables.
+
+### 1. Supabase
+
+1. En **Connect** copia dos cadenas de conexión:
+   - **Transaction pooler** (puerto 6543) → `DATABASE_URL`, añadiendo `?pgbouncer=true` al final.
+   - **Session pooler** (puerto 5432, host `aws-0-…pooler.supabase.com`) → `DIRECT_URL`.
+     No uses la conexión directa `db.<ref>.supabase.co`: en el plan gratuito es solo IPv6 y
+     Render no la alcanza.
+2. En **Project Settings → JWT Keys** comprueba que el proyecto usa claves de firma asimétricas:
+   `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json` debe devolver `"keys": [...]` no vacío.
+3. Las migraciones y el catálogo se aplican solos al arrancar el API (paso 2). Para hacerlo a mano:
+   `DATABASE_URL=<session pooler> DIRECT_URL=<session pooler> npm run db:deploy -w backend && DATABASE_URL=<session pooler> npm run db:seed -w backend`.
+
+### 2. API en Render
+
+1. **New → Blueprint**, elige el repo y la rama; Render lee `render.yaml`.
+2. Rellena las variables marcadas: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`,
+   `SUPABASE_JWKS_URL` y `CORS_ORIGIN` (la URL de Vercel; si aún no la tienes, ponla después).
+3. Al terminar, `https://<servicio>.onrender.com/health` debe responder `{"status":"ok"}`.
+   En el plan gratuito el servicio se duerme tras 15 min sin uso; la primera petición tarda ~50 s.
+
+### 3. PWA en Vercel
+
+1. **Add New → Project**, importa el repo. Deja la raíz del proyecto en la raíz del repo
+   (Vercel usa `vercel.json`: genera el cliente Prisma, compila `frontend` y publica `frontend/dist`).
+2. Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (clave publishable o anon) y
+   `VITE_API_URL=https://<servicio>.onrender.com`.
+3. Vuelve a Render y pon la URL de Vercel en `CORS_ORIGIN` (varias URLs separadas por comas).
+
+### 4. Supabase Auth
+
+En **Authentication → URL Configuration**: **Site URL** = URL de Vercel, y añádela también en
+**Redirect URLs** (además de `http://localhost:5173` para desarrollo).
+
+### 5. Probar en el celular
+
+Abre la URL de Vercel, pide el enlace mágico y ábrelo desde el correo en el mismo teléfono. Para
+instalarla: Safari → Compartir → "Añadir a pantalla de inicio"; Chrome → menú → "Instalar app".
+
+### Notas
+
+- Las tablas tienen RLS activado sin políticas; solo el backend (propietario de las tablas) accede
+  a los datos.
+- Después de cualquier migración que cambie `maintenance_types`, ejecuta
+  `npm run db:recompute-maintenance -w backend` con las variables de producción.

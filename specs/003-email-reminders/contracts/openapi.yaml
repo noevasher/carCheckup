@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  title: Car Checkup API — Recordatorios
+  version: 1.0.0
+  description: >
+    Endpoints de la feature 003-email-reminders. Complementa los contratos de 001 y 002 (mismo
+    servidor y formato de error). `/v1/*` requiere el token de Supabase; `/public/*` no requiere
+    sesión (token de baja firmado); `/webhooks/*` exige firma del proveedor; `/internal/*` exige
+    `Authorization: Bearer <JOBS_SECRET>`.
+
+paths:
+  /v1/me:
+    get:
+      summary: (Cambio) el perfil incluye el estado del correo
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Profile' }
+
+  /v1/vehicles:
+    post:
+      summary: (Cambio) VehicleCreate acepta `emailReminders` (boolean, default false) (FR-007)
+      responses: { '201': { description: Vehículo con `emailReminders` } }
+
+  /v1/vehicles/{vehicleId}:
+    patch:
+      summary: (Cambio) VehicleUpdate acepta `emailReminders` (FR-007, FR-008)
+      parameters:
+        - { name: vehicleId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses: { '200': { description: Vehículo actualizado } }
+
+  /v1/push-subscriptions:
+    post:
+      summary: Registrar la suscripción push de este dispositivo (US2-3)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PushSubscriptionCreate' }
+      responses:
+        '201': { description: Suscripción registrada (o reasignada a este usuario) }
+        '422': { description: VALIDATION_ERROR }
+    delete:
+      summary: Dar de baja la suscripción de este dispositivo (p. ej. al cerrar sesión)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [endpoint]
+              properties:
+                endpoint: { type: string, format: uri, maxLength: 2048 }
+      responses:
+        '204': { description: Eliminada (o no existía) }
+
+  /public/unsubscribe:
+    post:
+      summary: Baja del correo en un clic, sin sesión (FR-014; RFC 8058 one-click)
+      description: >
+        Acepta el token en el cuerpo JSON (página de la app) o en la query `token` (cabecera
+        List-Unsubscribe-Post de los clientes de correo). Token inválido → 404 sin detalles.
+      parameters:
+        - { name: token, in: query, required: false, schema: { type: string, maxLength: 200 } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Baja aplicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UnsubscribeResult' }
+        '404': { description: NOT_FOUND }
+
+  /public/resubscribe:
+    post:
+      summary: Deshacer la baja (US4-1)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string, maxLength: 200 }
+      responses:
+        '200':
+          description: Alta restaurada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UnsubscribeResult' }
+        '404': { description: NOT_FOUND }
+
+  /webhooks/resend:
+    post:
+      summary: Eventos de Resend (rebote permanente y queja) (FR-015)
+      description: Cabeceras svix-id, svix-timestamp y svix-signature verificadas; cuerpo validado.
+      responses:
+        '204': { description: Procesado o ignorado }
+        '401': { description: Firma inválida }
+
+  /internal/jobs/reminders:
+    post:
+      summary: Ejecutar una pasada del proceso de recordatorios (R5)
+      parameters:
+        - { name: budgetMs, in: query, required: false, schema: { type: integer, minimum: 1000, maximum: 3300000 } }
+      responses:
+        '200':
+          description: Resumen de la ejecución
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/JobResult' }
+        '401': { description: Secreto inválido }
+
+components:
+  schemas:
+    Profile:
+      type: object
+      required: [id, activeVehicleId, emailStatus, emailUnsubscribed]
+      properties:
+        id: { type: string, format: uuid }
+        activeVehicleId: { type: [string, 'null'], format: uuid }
+        emailStatus: { type: string, enum: [OK, BOUNCED, COMPLAINED] }
+        emailUnsubscribed: { type: boolean }
+
+    PushSubscriptionCreate:
+      type: object
+      required: [endpoint, keys]
+      properties:
+        endpoint: { type: string, format: uri, maxLength: 2048, description: Debe ser https }
+        keys:
+          type: object
+          required: [p256dh, auth]
+          properties:
+            p256dh: { type: string, maxLength: 200 }
+            auth: { type: string, maxLength: 100 }
+        userAgent: { type: [string, 'null'], maxLength: 300 }
+
+    UnsubscribeResult:
+      type: object
+      required: [unsubscribed]
+      properties:
+        unsubscribed: { type: boolean }
+
+    JobResult:
+      type: object
+      required: [usersProcessed, noticesCreated, pushSent, emailsSent, failures, hasMore, durationMs]
+      properties:
+        usersProcessed: { type: integer }
+        noticesCreated: { type: integer }
+        pushSent: { type: integer }
+        emailsSent: { type: integer }
+        failures: { type: integer }
+        hasMore: { type: boolean, description: Quedaron usuarios pendientes al agotar el presupuesto }
+        durationMs: { type: integer }

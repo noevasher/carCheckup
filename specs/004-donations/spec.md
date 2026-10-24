@@ -181,10 +181,11 @@ beneficio vigente.
 - Sin conexión: el botón de donar se desactiva con un mensaje claro; no hay donaciones offline.
 - Un proveedor no está disponible o mal configurado: la app muestra solo el medio que sí funciona;
   si ninguno funciona, la pantalla explica que donar no está disponible por ahora.
-- El usuario elimina su cuenta o un vehículo: el historial de donaciones se conserva para fines
-  contables, sin datos del vehículo.
-- PayPal en una moneda distinta: el proveedor convierte; la app registra el monto y la moneda
-  originales del donante.
+- El usuario elimina un vehículo: las donaciones no dependen de vehículos y no cambian.
+- El usuario elimina su cuenta: sus donaciones se conservan sin vínculo con él (anónimas) para
+  fines contables; su donación mensual se cancela antes en el proveedor.
+- PayPal en una moneda distinta: el donante paga en MXN y PayPal o su banco hacen la conversión;
+  la app registra el monto en MXN.
 
 ## Requirements *(mandatory)*
 
@@ -232,7 +233,10 @@ beneficio vigente.
 - **FR-014b**: El usuario DEBE poder cancelar su donación mensual desde "Mis donaciones" con una
   confirmación; no se vuelve a cobrar y el beneficio dura hasta el final del periodo pagado.
 - **FR-014c**: Los cobros mensuales confirmados, los fallidos y las cancelaciones hechas desde el
-  proveedor DEBEN reflejarse en la app ("Activa", "Con problema de pago", "Cancelada").
+  proveedor DEBEN reflejarse en la app ("Activa", "Con problema de pago", "Cancelada"). Con "Con
+  problema de pago", "Mis donaciones" DEBE mostrar cómo actualizar el medio de pago: con tarjeta,
+  un enlace al portal de cliente del proveedor; con PayPal, instrucciones para hacerlo en su
+  cuenta de PayPal.
 - **FR-014d**: Los reembolsos y disputas DEBEN retirar los días sin anuncios que dio esa donación.
 - **FR-015**: Si un medio de pago no está configurado o no responde, la app DEBE ocultar ese medio
   y seguir ofreciendo el otro.

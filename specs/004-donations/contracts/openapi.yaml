@@ -1,0 +1,178 @@
+openapi: 3.1.0
+info:
+  title: Car Checkup API — Donaciones
+  version: 1.0.0
+  description: >
+    Endpoints de la feature 004-donations. Mismo servidor y formato de error que 001–003.
+    `/v1/*` requiere el token de Supabase; `/webhooks/*` exige la firma del proveedor.
+
+paths:
+  /v1/me:
+    get:
+      summary: (Cambio) el perfil incluye `adFreeUntil` y `showDonationCard`
+      responses:
+        '200': { description: Perfil, content: { application/json: { schema: { $ref: '#/components/schemas/Profile' } } } }
+
+  /v1/donations/config:
+    get:
+      summary: Datos de la pantalla "Apoya Car Checkup" (FR-001, FR-002, FR-015)
+      responses:
+        '200':
+          description: Configuración
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DonationConfig' }
+
+  /v1/donations:
+    get:
+      summary: Mis donaciones (FR-010)
+      responses:
+        '200':
+          description: Historial
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DonationHistory' }
+    post:
+      summary: Iniciar una donación única o mensual (FR-004, FR-014); idempotente por checkoutKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DonationStart' }
+      responses:
+        '201':
+          description: Redirigir al proveedor
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DonationStartResult' }
+        '409': { description: 'ACTIVE_SUBSCRIPTION_EXISTS: ya hay una donación mensual activa (US2-5)' }
+        '422': { description: 'Monto fuera de límites o proveedor no disponible' }
+        '502': { description: 'PROVIDER_UNAVAILABLE: el proveedor no respondió' }
+
+  /v1/donations/{donationId}:
+    get:
+      summary: Estado de una donación o suscripción iniciada (pantalla de resultado, R7)
+      parameters:
+        - { name: donationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Estado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DonationResult' }
+        '404': { description: No existe o es de otro usuario }
+
+  /v1/donations/{donationId}/paypal-return:
+    post:
+      summary: Al volver de PayPal, captura la orden aprobada (no confirma; R3)
+      parameters:
+        - { name: donationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/DonationResult' } } }, description: Estado tras la captura }
+
+  /v1/donations/subscription/cancel:
+    post:
+      summary: Cancelar la donación mensual activa (FR-014b)
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/Subscription' } } }, description: Cancelada; beneficio hasta paidUntil }
+        '404': { description: No hay donación mensual activa }
+
+  /v1/donations/subscription/manage-link:
+    post:
+      summary: Enlace para actualizar el medio de pago de la mensual (FR-014c; solo Stripe)
+      responses:
+        '200':
+          description: Portal de cliente de Stripe
+          content: { application/json: { schema: { type: object, required: [url], properties: { url: { type: string, format: uri } } } } }
+        '404': { description: Sin mensual activa o con PayPal (la app muestra instrucciones) }
+
+  /v1/donations/card/dismiss:
+    post:
+      summary: Cerrar la tarjeta de invitación (FR-012a, 90 días)
+      responses: { '204': { description: Cerrada } }
+
+  /webhooks/stripe:
+    post:
+      summary: Eventos de Stripe (cuerpo crudo, cabecera Stripe-Signature) — ver payments.md
+      responses: { '200': { description: Procesado o ya procesado }, '400': { description: Firma inválida } }
+
+  /webhooks/paypal:
+    post:
+      summary: Eventos de PayPal (cabeceras PAYPAL-TRANSMISSION-*) — ver payments.md
+      responses: { '200': { description: Procesado o ya procesado }, '400': { description: Firma inválida } }
+
+components:
+  schemas:
+    Provider: { type: string, enum: [STRIPE, PAYPAL] }
+    Profile:
+      type: object
+      description: Perfil de 001–003 más
+      properties:
+        adFreeUntil: { type: [string, 'null'], format: date-time }
+        showDonationCard: { type: boolean }
+    DonationConfig:
+      type: object
+      required: [providers, presets, minAmount, maxAmount, currency, adFreeUntil, subscription, supportEmail]
+      properties:
+        providers: { type: array, items: { $ref: '#/components/schemas/Provider' } }
+        presets: { type: array, items: { type: integer }, example: [50, 100, 200] }
+        minAmount: { type: integer, example: 20 }
+        maxAmount: { type: integer, example: 10000 }
+        currency: { type: string, const: MXN }
+        adFreeUntil: { type: [string, 'null'], format: date-time }
+        subscription: { oneOf: [{ $ref: '#/components/schemas/Subscription' }, { type: 'null' }] }
+        supportEmail: { type: [string, 'null'], format: email }
+    DonationStart:
+      type: object
+      required: [kind, amount, provider, checkoutKey]
+      properties:
+        kind: { type: string, enum: [ONE_TIME, MONTHLY] }
+        amount: { type: integer, minimum: 20, maximum: 10000, description: MXN enteros }
+        provider: { $ref: '#/components/schemas/Provider' }
+        checkoutKey: { type: string, format: uuid }
+    DonationStartResult:
+      type: object
+      required: [donationId, redirectUrl]
+      properties:
+        donationId: { type: string, format: uuid, description: Donation (única) o DonationSubscription (mensual) }
+        redirectUrl: { type: string, format: uri }
+    DonationResult:
+      type: object
+      required: [id, kind, status, amount, provider]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [ONE_TIME, MONTHLY] }
+        status: { type: string, enum: [PENDING, CONFIRMED, CANCELED, FAILED, REFUNDED, DISPUTED] }
+        amount: { type: integer }
+        provider: { $ref: '#/components/schemas/Provider' }
+        adFreeUntil: { type: [string, 'null'], format: date-time }
+    Subscription:
+      type: object
+      required: [id, provider, amount, status]
+      properties:
+        id: { type: string, format: uuid }
+        provider: { $ref: '#/components/schemas/Provider' }
+        amount: { type: integer }
+        status: { type: string, enum: [PENDING, ACTIVE, PAST_DUE, CANCELED] }
+        paidUntil: { type: [string, 'null'], format: date-time }
+        nextChargeAt: { type: [string, 'null'], format: date-time }
+    DonationItem:
+      type: object
+      required: [id, kind, provider, amount, currency, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [ONE_TIME, MONTHLY_CHARGE] }
+        provider: { $ref: '#/components/schemas/Provider' }
+        amount: { type: integer }
+        currency: { type: string }
+        status: { type: string, enum: [PENDING, CONFIRMED, CANCELED, FAILED, REFUNDED, DISPUTED] }
+        createdAt: { type: string, format: date-time }
+        confirmedAt: { type: [string, 'null'], format: date-time }
+    DonationHistory:
+      type: object
+      required: [items, subscription, adFreeUntil, supportEmail]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/DonationItem' }, description: 'CONFIRMED, REFUNDED, DISPUTED y las PENDING de las últimas 24 h; más reciente primero' }
+        subscription: { oneOf: [{ $ref: '#/components/schemas/Subscription' }, { type: 'null' }] }
+        adFreeUntil: { type: [string, 'null'], format: date-time }
+        supportEmail: { type: [string, 'null'], format: email }

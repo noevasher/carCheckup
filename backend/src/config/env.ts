@@ -25,7 +25,22 @@ const EnvSchema = z.object({
   RESEND_WEBHOOK_SECRET: z.string().min(1).optional(),
   UNSUBSCRIBE_SECRET: z.string().min(32),
   JOBS_SECRET: z.string().min(32),
+  // Donations (feature 004)
+  STRIPE_SECRET_KEY: z.string().min(1).optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+  PAYPAL_CLIENT_ID: z.string().min(1).optional(),
+  PAYPAL_CLIENT_SECRET: z.string().min(1).optional(),
+  PAYPAL_WEBHOOK_ID: z.string().min(1).optional(),
+  PAYPAL_ENV: z.enum(['sandbox', 'live']).default('sandbox'),
+  /** `fake` simulates both providers (development, tests, e2e); never allowed in production. */
+  PAYMENTS_PROVIDER_MODE: z.enum(['real', 'fake']).optional(),
+  /** Comma-separated providers the fake mode reports as not responding (e2e of FR-015). */
+  FAKE_PAYMENTS_UNAVAILABLE: z.string().default(''),
+  SUPPORT_EMAIL: z.email().optional(),
 }).superRefine((e, ctx) => {
+  if (e.NODE_ENV === 'production' && e.PAYMENTS_PROVIDER_MODE === 'fake') {
+    ctx.addIssue({ code: 'custom', path: ['PAYMENTS_PROVIDER_MODE'], message: 'fake payments are not allowed in production' });
+  }
   if (e.EMAIL_PROVIDER === 'resend' && (e.RESEND_API_KEY === undefined || e.RESEND_WEBHOOK_SECRET === undefined)) {
     ctx.addIssue({ code: 'custom', path: ['RESEND_API_KEY'], message: 'RESEND_API_KEY and RESEND_WEBHOOK_SECRET are required with EMAIL_PROVIDER=resend' });
   }
@@ -34,7 +49,7 @@ const EnvSchema = z.object({
   }
 });
 
-export type Env = z.infer<typeof EnvSchema>;
+export type Env = z.infer<typeof EnvSchema> & { PAYMENTS_PROVIDER_MODE: 'real' | 'fake' };
 
 function loadEnv(): Env {
   const parsed = EnvSchema.safeParse(process.env);
@@ -42,7 +57,10 @@ function loadEnv(): Env {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`);
     throw new Error(`Invalid environment configuration:\n${problems.join('\n')}`);
   }
-  return Object.freeze(parsed.data);
+  const data = parsed.data;
+  // Fake payments by default outside production (research R13).
+  const mode = data.PAYMENTS_PROVIDER_MODE ?? (data.NODE_ENV === 'production' ? 'real' : 'fake');
+  return Object.freeze({ ...data, PAYMENTS_PROVIDER_MODE: mode });
 }
 
 export const env = loadEnv();

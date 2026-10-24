@@ -14,9 +14,19 @@ export function AppLayout() {
         <Link to="/" className="text-lg font-bold text-primary">
           {t.appName}
         </Link>
-        <Button variant="ghost" onClick={() => void signOut()}>
-          {t.signOut}
-        </Button>
+        <nav className="flex items-center gap-1">
+          {/* Fixed entry to donations, one tap from any screen (FR-001). */}
+          <Link
+            to="/support"
+            aria-label={t.donations.navLabel}
+            className="inline-flex min-h-tap items-center rounded-xl px-3 font-semibold text-primary hover:bg-surface-muted"
+          >
+            {t.donations.nav}
+          </Link>
+          <Button variant="ghost" onClick={() => void signOut()}>
+            {t.signOut}
+          </Button>
+        </nav>
       </header>
       <main className="mx-auto max-w-md px-4 pb-8">
         <SyncNotices />

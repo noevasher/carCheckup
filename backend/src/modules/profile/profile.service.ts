@@ -53,14 +53,45 @@ export function resetProfileCache(): void {
   knownProfiles.clear();
 }
 
-const profileSelect = { id: true, activeVehicleId: true, emailStatus: true, emailUnsubscribedAt: true } as const;
+const profileSelect = {
+  id: true,
+  activeVehicleId: true,
+  emailStatus: true,
+  emailUnsubscribedAt: true,
+  adFreeUntil: true,
+  donationCardDismissedAt: true,
+} as const;
 
-function toProfileDto(p: { id: string; activeVehicleId: string | null; emailStatus: ProfileDto['emailStatus']; emailUnsubscribedAt: Date | null }): ProfileDto {
+const DONATION_CARD_PAUSE_MS = 90 * 86_400_000;
+
+interface ProfileRow {
+  id: string;
+  activeVehicleId: string | null;
+  emailStatus: ProfileDto['emailStatus'];
+  emailUnsubscribedAt: Date | null;
+  adFreeUntil: Date | null;
+  donationCardDismissedAt: Date | null;
+}
+
+/**
+ * The home donation card shows to users without an active benefit who registered at least one
+ * service and did not close it in the last 90 days (FR-012a, FR-012b, research R9).
+ */
+async function showDonationCard(p: ProfileRow, now: Date): Promise<boolean> {
+  if (p.adFreeUntil !== null && p.adFreeUntil > now) return false;
+  if (p.donationCardDismissedAt !== null && now.getTime() - p.donationCardDismissedAt.getTime() < DONATION_CARD_PAUSE_MS) return false;
+  const service = await prisma.serviceRecord.findFirst({ where: { vehicle: { userId: p.id } }, select: { id: true } });
+  return service !== null;
+}
+
+async function toProfileDto(p: ProfileRow, now = new Date()): Promise<ProfileDto> {
   return {
     id: p.id,
     activeVehicleId: p.activeVehicleId,
     emailStatus: p.emailStatus,
     emailUnsubscribed: p.emailUnsubscribedAt !== null,
+    adFreeUntil: p.adFreeUntil !== null && p.adFreeUntil > now ? p.adFreeUntil.toISOString() : null,
+    showDonationCard: await showDonationCard(p, now),
   };
 }
 

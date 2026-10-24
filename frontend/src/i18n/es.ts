@@ -241,6 +241,89 @@ export const t = {
       error: 'No pudimos completar la acción. Inténtalo de nuevo en un momento.',
     },
   },
+  donations: {
+    nav: 'Apoyar',
+    navLabel: 'Apoya Car Checkup',
+    title: 'Apoya Car Checkup',
+    why: 'Car Checkup es gratis. Tu donación ayuda a pagar los servidores y a seguir mejorando la app. Como agradecimiento, la usas sin anuncios.',
+    benefitRule: 'Por cada 50 MXN, 30 días sin anuncios.',
+    monthlyBenefit: 'Sin anuncios mientras tu donación mensual esté activa.',
+    once: 'Una vez',
+    monthly: 'Cada mes',
+    frequency: 'Frecuencia',
+    amountLegend: 'Monto',
+    otherAmount: 'Otro monto',
+    otherAmountLabel: 'Monto en pesos',
+    amountRange: (min: number, max: number) => `Entre ${String(min)} y ${max.toLocaleString('es-MX')} MXN, sin centavos.`,
+    payWith: '¿Cómo quieres pagar?',
+    card: 'Tarjeta',
+    paypal: 'PayPal',
+    perMonth: 'al mes',
+    secureNote: 'Pagas en la página segura de Stripe o PayPal. Car Checkup nunca ve los datos de tu tarjeta.',
+    offline: 'Necesitas conexión a internet para donar.',
+    unavailableAll: 'Donar no está disponible por ahora. Inténtalo más tarde.',
+    providerDown: (name: string, other: string | null) =>
+      other === null
+        ? `No pudimos conectar con ${name}. Inténtalo de nuevo en un momento.`
+        : `No pudimos conectar con ${name}. Inténtalo de nuevo o usa ${other}.`,
+    hasMonthly: 'Ya tienes una donación mensual activa.',
+    manageMonthly: 'Gestionarla en Mis donaciones',
+    adFreeUntil: (date: string) => `Sin anuncios hasta el ${date}.`,
+    history: 'Mis donaciones',
+    resultThanksTitle: '¡Gracias por tu apoyo!',
+    resultThanksBody: 'Tu donación ya está confirmada. Te enviamos el comprobante por correo.',
+    resultPendingTitle: 'Estamos confirmando tu pago',
+    resultPendingBody: 'Puede tardar unos segundos. No tienes que pagar de nuevo.',
+    resultSlowBody: 'Está tardando más de lo normal. Te avisaremos por correo cuando se confirme; también lo verás en Mis donaciones.',
+    resultCanceledTitle: 'No se realizó ningún cargo',
+    resultCanceledBody: 'Puedes intentarlo de nuevo cuando quieras.',
+    tryAgain: 'Intentar de nuevo',
+    goHome: 'Ir al inicio',
+    historyEmpty: 'Todavía no tienes donaciones.',
+    historyEmptyAction: 'Apoyar Car Checkup',
+    oneTime: 'Donación única',
+    monthlyCharge: 'Donación mensual',
+    status: {
+      PENDING: 'Confirmando tu pago…',
+      CONFIRMED: 'Confirmada',
+      CANCELED: 'Cancelada',
+      FAILED: 'No se completó',
+      REFUNDED: 'Reembolsada',
+      DISPUTED: 'En disputa',
+    },
+    subscriptionTitle: 'Tu donación mensual',
+    subscriptionStatus: {
+      PENDING: 'Pendiente',
+      ACTIVE: 'Activa',
+      PAST_DUE: 'Con problema de pago',
+      CANCELED: 'Cancelada',
+    },
+    nextCharge: (date: string) => `Siguiente cargo: ${date}.`,
+    activeUntil: (date: string) => `Sin más cargos. Cuenta hasta el ${date}.`,
+    pastDueCard: 'No pudimos cobrar tu donación de este mes. Actualiza tu tarjeta para seguir apoyando.',
+    pastDuePayPal:
+      'No pudimos cobrar tu donación de este mes. Revisa tu medio de pago en tu cuenta de PayPal (Configuración → Pagos → Pagos automáticos).',
+    updateCard: 'Actualizar tarjeta',
+    cancelMonthly: 'Cancelar donación mensual',
+    cancelTitle: '¿Cancelar tu donación mensual?',
+    cancelBody: (date: string | null) =>
+      date === null
+        ? 'No se te volverá a cobrar.'
+        : `No se te volverá a cobrar. Seguirás sin anuncios hasta el ${date}.`,
+    cancelConfirm: 'Sí, cancelar',
+    cancelKeep: 'No, mantenerla',
+    canceled: 'Donación mensual cancelada. No habrá más cargos.',
+    changeAmountNote: 'Para cambiar el monto, cancela tu donación mensual y crea otra.',
+    contactPrefix: '¿Dudas o necesitas un reembolso? Escríbenos a ',
+    cardTitle: '¿Te ayuda Car Checkup?',
+    cardBody: 'Con una donación nos ayudas a mantenerla gratis y la usas sin anuncios.',
+    cardAction: 'Apoyar',
+    cardDismiss: 'Ahora no',
+    fakeTitle: 'Pago simulado',
+    fakeBody: 'Esta página solo existe en desarrollo y pruebas: simula la página de pago del proveedor.',
+    fakePay: 'Pagar',
+    fakeCancel: 'Cancelar',
+  },
   common: {
     back: 'Volver',
     cancel: 'Cancelar',
@@ -278,6 +361,10 @@ export function messageForError(
       return 'Hubo un conflicto al guardar. Vuelve a intentarlo.';
     case 'RATE_LIMITED':
       return 'Demasiados intentos seguidos. Espera un minuto.';
+    case 'ACTIVE_SUBSCRIPTION_EXISTS':
+      return 'Ya tienes una donación mensual activa.';
+    case 'PROVIDER_UNAVAILABLE':
+      return 'No pudimos conectar con el medio de pago. Inténtalo de nuevo.';
     case 'VALIDATION_ERROR':
       return 'Revisa los datos marcados.';
     case 'INTERNAL':

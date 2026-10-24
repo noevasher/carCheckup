@@ -59,6 +59,26 @@ services:
       # Copia este valor al secreto JOBS_SECRET de GitHub Actions
       - key: JOBS_SECRET
         generateValue: true
+      # --- Donaciones (feature 004) ---
+      - key: PAYMENTS_PROVIDER_MODE
+        value: real
+      # Stripe → Developers → API keys / Webhooks (https://<servicio>.onrender.com/webhooks/stripe)
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      # developer.paypal.com → app REST; webhook https://<servicio>.onrender.com/webhooks/paypal
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: PAYPAL_ENV
+        value: live
+      # Correo de contacto para dudas o reembolsos
+      - key: SUPPORT_EMAIL
+        sync: false
 
   # Alternative to the GitHub Actions scheduler on a paid plan (Render cron jobs are not free):
   # - type: cron

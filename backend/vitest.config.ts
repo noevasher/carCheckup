@@ -20,6 +20,9 @@ export default defineConfig({
       RESEND_WEBHOOK_SECRET: 'whsec_dGVzdC13ZWJob29rLXNlY3JldC0wMTIzNDU2Nzg5',
       UNSUBSCRIBE_SECRET: 'test-unsubscribe-secret-0123456789abcdef',
       JOBS_SECRET: 'test-jobs-secret-0123456789abcdef0123',
+      PAYMENTS_PROVIDER_MODE: 'fake',
+      STRIPE_WEBHOOK_SECRET: 'whsec_test_stripe_0123456789abcdef',
+      SUPPORT_EMAIL: 'soporte@test.dev',
     },
   },
 });

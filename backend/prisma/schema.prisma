@@ -112,23 +112,29 @@ enum DeliveryStatus {
 
 /// Application data for an authenticated Supabase user (id = auth.users.id = JWT `sub`).
 model Profile {
-  id                  String             @id @db.Uuid
-  activeVehicleId     String?            @unique @map("active_vehicle_id") @db.Uuid
-  activeVehicle       Vehicle?           @relation("ActiveVehicle", fields: [activeVehicleId], references: [id], onDelete: SetNull)
-  vehicles            Vehicle[]          @relation("OwnedVehicles")
+  id                      String                 @id @db.Uuid
+  activeVehicleId         String?                @unique @map("active_vehicle_id") @db.Uuid
+  activeVehicle           Vehicle?               @relation("ActiveVehicle", fields: [activeVehicleId], references: [id], onDelete: SetNull)
+  vehicles                Vehicle[]              @relation("OwnedVehicles")
   /// Login email from the Supabase JWT (feature 003, research R9).
-  email               String?            @db.VarChar(320)
+  email                   String?                @db.VarChar(320)
   /// Last IANA time zone reported by the user's device (FR-019).
-  timeZone            String             @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
+  timeZone                String                 @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
   /// Next 09:00 local time at which the daily digest is due (research R6).
-  nextDigestAt        DateTime           @default(now()) @map("next_digest_at") @db.Timestamptz(3)
-  emailStatus         EmailStatus        @default(OK) @map("email_status")
-  emailUnsubscribedAt DateTime?          @map("email_unsubscribed_at") @db.Timestamptz(3)
-  pushSubscriptions   PushSubscription[]
-  notices             Notice[]
-  deliveries          Delivery[]
-  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt           DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+  nextDigestAt            DateTime               @default(now()) @map("next_digest_at") @db.Timestamptz(3)
+  emailStatus             EmailStatus            @default(OK) @map("email_status")
+  emailUnsubscribedAt     DateTime?              @map("email_unsubscribed_at") @db.Timestamptz(3)
+  pushSubscriptions       PushSubscription[]
+  notices                 Notice[]
+  deliveries              Delivery[]
+  /// Ad-free benefit end, derived from donations (feature 004, research R5); null = none.
+  adFreeUntil             DateTime?              @map("ad_free_until") @db.Timestamptz(3)
+  /// Last time the home donation card was closed (FR-012a, 90 days).
+  donationCardDismissedAt DateTime?              @map("donation_card_dismissed_at") @db.Timestamptz(3)
+  donations               Donation[]
+  donationSubscriptions   DonationSubscription[]
+  createdAt               DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([nextDigestAt])
   @@map("profiles")
@@ -382,4 +388,112 @@ model DeliveryNotice {
 
   @@id([deliveryId, noticeId])
   @@map("delivery_notices")
+}
+
+// ---------------------------------------------------------------------------
+// Donations (feature 004)
+// ---------------------------------------------------------------------------
+
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+}
+
+enum DonationKind {
+  ONE_TIME
+  MONTHLY_CHARGE
+}
+
+enum DonationStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  FAILED
+  REFUNDED
+  DISPUTED
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+/// A one-time donation or one confirmed monthly charge. Kept (anonymous) if the account is deleted.
+model Donation {
+  id                 String                @id @default(uuid()) @db.Uuid
+  userId             String?               @map("user_id") @db.Uuid
+  user               Profile?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kind               DonationKind
+  provider           PaymentProvider
+  /// 2.000–1.000.000 (20–10.000 MXN).
+  amountCents        Int                   @map("amount_cents")
+  currency           String                @default("MXN") @db.VarChar(3)
+  status             DonationStatus        @default(PENDING)
+  /// Idempotency key of the start request (ONE_TIME only, research R4).
+  checkoutKey        String?               @map("checkout_key") @db.Uuid
+  /// Stripe Checkout session / PayPal order.
+  providerCheckoutId String?               @map("provider_checkout_id") @db.VarChar(255)
+  /// payment_intent / capture / sale / invoice.
+  providerPaymentId  String?               @map("provider_payment_id") @db.VarChar(255)
+  subscriptionId     String?               @map("subscription_id") @db.Uuid
+  subscription       DonationSubscription? @relation(fields: [subscriptionId], references: [id], onDelete: SetNull)
+  periodStart        DateTime?             @map("period_start") @db.Timestamptz(3)
+  periodEnd          DateTime?             @map("period_end") @db.Timestamptz(3)
+  adFreeDays         Int                   @default(0) @map("ad_free_days")
+  confirmedAt        DateTime?             @map("confirmed_at") @db.Timestamptz(3)
+  createdAt          DateTime              @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime              @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([userId, checkoutKey])
+  @@unique([provider, providerPaymentId])
+  @@index([provider, providerCheckoutId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("donations")
+}
+
+model DonationSubscription {
+  id                     String             @id @default(uuid()) @db.Uuid
+  userId                 String?            @map("user_id") @db.Uuid
+  user                   Profile?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  provider               PaymentProvider
+  amountCents            Int                @map("amount_cents")
+  status                 SubscriptionStatus @default(PENDING)
+  checkoutKey            String             @map("checkout_key") @db.Uuid
+  /// Stripe Checkout session id / PayPal subscription id while pending.
+  providerCheckoutId     String?            @map("provider_checkout_id") @db.VarChar(255)
+  providerSubscriptionId String?            @unique @map("provider_subscription_id") @db.VarChar(255)
+  paidUntil              DateTime?          @map("paid_until") @db.Timestamptz(3)
+  nextChargeAt           DateTime?          @map("next_charge_at") @db.Timestamptz(3)
+  canceledAt             DateTime?          @map("canceled_at") @db.Timestamptz(3)
+  charges                Donation[]
+  createdAt              DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([userId, checkoutKey])
+  @@map("donation_subscriptions")
+}
+
+/// One PayPal monthly plan per amount (research R2).
+model PayPalPlan {
+  amountCents Int      @map("amount_cents")
+  env         String   @db.VarChar(16)
+  planId      String   @map("plan_id") @db.VarChar(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@id([amountCents, env])
+  @@map("paypal_plans")
+}
+
+/// Processed provider webhook events (idempotency, FR-007).
+model PaymentEvent {
+  provider   PaymentProvider
+  eventId    String          @map("event_id") @db.VarChar(255)
+  type       String          @db.VarChar(100)
+  donationId String?         @map("donation_id") @db.Uuid
+  receivedAt DateTime        @default(now()) @map("received_at") @db.Timestamptz(3)
+
+  @@id([provider, eventId])
+  @@map("payment_events")
 }

@@ -6,6 +6,8 @@ const EnvSchema = z.object({
   VITE_API_URL: z.url(),
   /** Web Push public key (feature 003); without it push is reported as unsupported. */
   VITE_VAPID_PUBLIC_KEY: z.optional(z.string().check(z.minLength(20))),
+  /** "1" enables the simulated checkout page outside dev (e2e with fake payments, feature 004). */
+  VITE_FAKE_PAYMENTS: z.optional(z.string()),
 });
 
 /** Thrown when frontend/.env is missing or invalid; main.tsx renders it instead of a blank page. */

@@ -42,7 +42,7 @@ export async function createTestContext() {
 
 export async function resetDatabase(): Promise<void> {
   await prisma.$executeRawUnsafe(
-    'TRUNCATE mileage_readings, vehicles, profiles, catalog_models, catalog_makes CASCADE',
+    'TRUNCATE mileage_readings, vehicles, profiles, catalog_models, catalog_makes, payment_events, paypal_plans CASCADE',
   );
   resetProfileCache();
 }

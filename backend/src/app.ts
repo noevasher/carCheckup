@@ -14,6 +14,8 @@ import { maintenanceRouter } from './modules/maintenance/maintenance.routes';
 import { pushSubscriptionsRouter } from './modules/notifications/push-subscriptions.routes';
 import { publicRouter } from './modules/notifications/public.routes';
 import { webhooksRouter } from './modules/notifications/webhooks.routes';
+import { donationsRouter } from './modules/donations/donations.routes';
+import { donationWebhooksRouter } from './modules/donations/webhooks.routes';
 import { jobsRouter } from './modules/reminders/jobs.routes';
 import { servicesRouter } from './modules/services/services.routes';
 import { profileRouter } from './modules/profile/profile.routes';
@@ -38,6 +40,7 @@ export function createApp(options: AppOptions = {}): Express {
   if (rateLimited) app.use(ipRateLimit);
   // Webhooks need the raw body for signature verification: mounted before the JSON parser.
   app.use(webhooksRouter);
+  app.use(donationWebhooksRouter);
   app.use(express.json({ limit: '10kb' }));
 
   app.get('/health', (_req, res) => {
@@ -60,6 +63,7 @@ export function createApp(options: AppOptions = {}): Express {
   v1.use(maintenanceRouter);
   v1.use(servicesRouter);
   v1.use(pushSubscriptionsRouter);
+  v1.use(donationsRouter);
   app.use('/v1', v1);
 
   app.use(notFoundHandler);

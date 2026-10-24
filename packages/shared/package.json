@@ -12,7 +12,8 @@
     "./prisma/enums": "./src/generated/prisma/enums.ts",
     "./maintenance": "./src/maintenance/index.ts",
     "./i18n": "./src/i18n/index.ts",
-    "./reminders": "./src/reminders/index.ts"
+    "./reminders": "./src/reminders/index.ts",
+    "./donations": "./src/donations/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

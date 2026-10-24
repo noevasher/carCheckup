@@ -115,6 +115,32 @@ instalarla: Safari → Compartir → "Añadir a pantalla de inicio"; Chrome → 
 5. En el iPhone las notificaciones solo funcionan con la app instalada en la pantalla de inicio
    (iOS 16.4+); la app lo explica al registrar el primer vehículo.
 
+### 7. Donaciones (feature 004)
+
+Sin las variables de un proveedor, la app no lo ofrece; sin ninguno, la pantalla "Apoya Car
+Checkup" explica que donar no está disponible.
+
+1. **Stripe**: en **Developers → API keys** copia la clave secreta (`STRIPE_SECRET_KEY`). En
+   **Developers → Webhooks** añade `https://<servicio>.onrender.com/webhooks/stripe` con los eventos
+   `checkout.session.completed`, `checkout.session.async_payment_succeeded`,
+   `checkout.session.async_payment_failed`, `checkout.session.expired`, `invoice.paid`,
+   `invoice.payment_failed`, `customer.subscription.deleted`, `charge.refunded`,
+   `charge.dispute.created` y `charge.dispute.closed`; copia el *signing secret* en
+   `STRIPE_WEBHOOK_SECRET`. Activa el **Customer portal** (Settings → Billing → Customer portal)
+   para "Actualizar tarjeta".
+2. **PayPal**: en developer.paypal.com crea una app REST (`PAYPAL_CLIENT_ID`,
+   `PAYPAL_CLIENT_SECRET`, `PAYPAL_ENV=live` o `sandbox`) y un webhook a
+   `https://<servicio>.onrender.com/webhooks/paypal` con los eventos de
+   `specs/004-donations/contracts/payments.md`; su id va en `PAYPAL_WEBHOOK_ID`.
+3. `SUPPORT_EMAIL`: correo que se muestra para dudas o reembolsos. Los reembolsos se hacen desde el
+   panel de Stripe o PayPal y la app los refleja sola.
+4. `PAYMENTS_PROVIDER_MODE=real` en producción (el modo `fake`, de desarrollo, impide arrancar).
+
+**Probar en local**: sin variables, `npm run dev` usa pagos simulados (página "Pago simulado").
+Con Stripe en modo test: `PAYMENTS_PROVIDER_MODE=real`, `STRIPE_SECRET_KEY=sk_test_…` y
+`stripe listen --forward-to localhost:3000/webhooks/stripe` (su `whsec_…` en
+`STRIPE_WEBHOOK_SECRET`); tarjeta de prueba 4242 4242 4242 4242.
+
 ### Notas
 
 - Las tablas tienen RLS activado sin políticas; solo el backend (propietario de las tablas) accede

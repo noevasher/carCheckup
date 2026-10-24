@@ -4,6 +4,7 @@ import { Banner, Button, Skeleton } from '../../design/components';
 import { messageForError, t } from '../../i18n/es';
 import { ApiRequestError } from '../../lib/api';
 import { useAuth, useUserId } from '../auth/AuthProvider';
+import { DonationCard } from '../donations/DonationCard';
 import { NotificationsPrompt, wasPrompted } from '../notifications/NotificationsPrompt';
 import { formatKm, formatRelativeDay } from '../../lib/format';
 import { usePendingReadings } from '../../offline/sync';
@@ -156,6 +157,8 @@ export function HomePage() {
       </article>
 
       <MaintenanceAlerts key={active.id} vehicle={active} />
+
+      {profile.data?.showDonationCard === true && <DonationCard />}
 
       <QuickCaptureSheet vehicle={active} open={captureOpen || captureFromLink} onOpenChange={onCaptureOpenChange} />
 

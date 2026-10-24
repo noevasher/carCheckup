@@ -46,6 +46,10 @@ export default defineConfig({
         EMAIL_PROVIDER: 'log',
         UNSUBSCRIBE_SECRET: 'e2e-unsubscribe-secret-0123456789abcdef',
         JOBS_SECRET: 'e2e-jobs-secret-0123456789abcdef0123456',
+        // Donations (feature 004): simulated providers; PayPal reports "not responding" (FR-015).
+        PAYMENTS_PROVIDER_MODE: 'fake',
+        FAKE_PAYMENTS_UNAVAILABLE: 'PAYPAL',
+        SUPPORT_EMAIL: 'soporte@e2e.dev',
       },
       reuseExistingServer: false,
     },
@@ -58,6 +62,7 @@ export default defineConfig({
         VITE_API_URL: E2E.apiUrl,
         // Public VAPID key used only by the e2e suite (push itself is not delivered in tests).
         VITE_VAPID_PUBLIC_KEY: 'BBU8d4mgMvQrGVN5YkEGmzPPzO2ZhsggzFbLuPdTusHz0KJdEAY4odW_gpoq8kFjQ2Ekd2CBEnZrAX_hUOdgVvc',
+        VITE_FAKE_PAYMENTS: '1',
       },
       reuseExistingServer: false,
     },

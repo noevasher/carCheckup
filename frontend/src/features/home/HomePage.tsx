@@ -1,24 +1,50 @@
-import { useState } from 'react';
-import { Link, Navigate } from 'react-router';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { Banner, Button, Skeleton } from '../../design/components';
 import { messageForError, t } from '../../i18n/es';
 import { ApiRequestError } from '../../lib/api';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth, useUserId } from '../auth/AuthProvider';
+import { NotificationsPrompt, wasPrompted } from '../notifications/NotificationsPrompt';
 import { formatKm, formatRelativeDay } from '../../lib/format';
 import { usePendingReadings } from '../../offline/sync';
 import { MaintenanceAlerts } from '../maintenance/MaintenanceAlerts';
 import { QuickCaptureSheet } from '../readings/QuickCaptureSheet';
-import { useVehicles } from '../vehicles/api';
+import { useProfile, useVehicles } from '../vehicles/api';
 import { useActiveVehicle } from '../vehicles/useActiveVehicle';
 import { vehicleTitle, VehicleSwitcher } from '../vehicles/VehicleSwitcher';
 
 /** Home: active vehicle, current km and the one-tap "Actualizar km" action (FR-005, FR-016). */
 export function HomePage() {
   const { signOut } = useAuth();
+  const userId = useUserId();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const newVehicleId = (location.state as { newVehicleId?: string } | null)?.newVehicleId;
+  const [promptDone, setPromptDone] = useState(false);
+  const finishPrompt = useCallback(() => {
+    setPromptDone(true);
+    if (newVehicleId !== undefined) void navigate('.', { replace: true, state: null });
+  }, [newVehicleId, navigate]);
   const vehicles = useVehicles();
+  const profile = useProfile();
   const { active, setActive } = useActiveVehicle(vehicles.data);
   const pending = usePendingReadings(active?.id);
   const [captureOpen, setCaptureOpen] = useState(false);
+  // `/?capture=<vehicleId>` (mileage reminder link, feature 003 US3) opens the quick capture.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const captureId = searchParams.get('capture');
+  const captureTarget = captureId === null ? undefined : vehicles.data?.find((v) => v.id === captureId);
+  useEffect(() => {
+    if (captureTarget !== undefined && active?.id !== captureTarget.id) setActive(captureTarget.id);
+  }, [captureTarget, active?.id, setActive]);
+  const captureFromLink = captureTarget !== undefined && active?.id === captureTarget.id;
+  const onCaptureOpenChange = useCallback(
+    (open: boolean) => {
+      setCaptureOpen(open);
+      if (!open && captureId !== null) setSearchParams({}, { replace: true });
+    },
+    [captureId, setSearchParams],
+  );
 
   if (vehicles.isPending) {
     return (
@@ -61,6 +87,12 @@ export function HomePage() {
   return (
     <>
       <VehicleSwitcher vehicles={vehicles.data} activeId={active.id} onSelect={setActive} />
+
+      {profile.data !== undefined && profile.data.emailStatus !== 'OK' && (
+        <Banner tone="warning" className="mb-4">
+          {t.notifications.badEmailNoAddress}
+        </Banner>
+      )}
 
       {active.pendingReviewCount > 0 && (
         <Banner
@@ -125,7 +157,15 @@ export function HomePage() {
 
       <MaintenanceAlerts key={active.id} vehicle={active} />
 
-      <QuickCaptureSheet vehicle={active} open={captureOpen} onOpenChange={setCaptureOpen} />
+      <QuickCaptureSheet vehicle={active} open={captureOpen || captureFromLink} onOpenChange={onCaptureOpenChange} />
+
+      {!promptDone && (newVehicleId !== undefined || !wasPrompted(userId)) && (
+        <NotificationsPrompt
+          userId={userId}
+          vehicle={vehicles.data.find((v) => v.id === newVehicleId) ?? null}
+          onDone={finishPrompt}
+        />
+      )}
     </>
   );
 }

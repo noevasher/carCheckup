@@ -14,6 +14,7 @@ export type VehicleDto = Serialized<
     | 'licensePlate'
     | 'fuelType'
     | 'usageType'
+    | 'emailReminders'
     | 'currentOdometerKm'
     | 'lastReadingAt'
     | 'createdAt'

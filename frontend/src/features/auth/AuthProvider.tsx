@@ -2,6 +2,7 @@ import type { Session } from '@supabase/auth-js';
 import { useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, use, useEffect, useMemo, useState } from 'react';
 import { clearPersistedCache } from '../../app/persist';
+import { unsubscribeFromPush } from '../notifications/push';
 import { supabase } from '../../lib/supabase';
 
 interface AuthState {
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       userId: session?.user.id ?? null,
       loading,
       signOut: async () => {
+        await unsubscribeFromPush();
         await supabase.auth.signOut();
         queryClient.clear();
         await clearPersistedCache();

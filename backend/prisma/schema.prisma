@@ -80,15 +80,57 @@ enum LimitingFactor {
   TIME
 }
 
+enum EmailStatus {
+  OK
+  BOUNCED
+  COMPLAINED
+}
+
+enum NoticeKind {
+  MAINTENANCE_UPCOMING
+  MAINTENANCE_OVERDUE
+  MILEAGE_UPDATE
+}
+
+enum NotifiedStatus {
+  UPCOMING
+  OVERDUE
+}
+
+enum DeliveryChannel {
+  PUSH
+  EMAIL
+}
+
+enum DeliveryStatus {
+  SENT
+  FAILED
+  EXPIRED
+  BOUNCED
+  COMPLAINED
+}
+
 /// Application data for an authenticated Supabase user (id = auth.users.id = JWT `sub`).
 model Profile {
-  id              String    @id @db.Uuid
-  activeVehicleId String?   @unique @map("active_vehicle_id") @db.Uuid
-  activeVehicle   Vehicle?  @relation("ActiveVehicle", fields: [activeVehicleId], references: [id], onDelete: SetNull)
-  vehicles        Vehicle[] @relation("OwnedVehicles")
-  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                  String             @id @db.Uuid
+  activeVehicleId     String?            @unique @map("active_vehicle_id") @db.Uuid
+  activeVehicle       Vehicle?           @relation("ActiveVehicle", fields: [activeVehicleId], references: [id], onDelete: SetNull)
+  vehicles            Vehicle[]          @relation("OwnedVehicles")
+  /// Login email from the Supabase JWT (feature 003, research R9).
+  email               String?            @db.VarChar(320)
+  /// Last IANA time zone reported by the user's device (FR-019).
+  timeZone            String             @default("America/Mexico_City") @map("time_zone") @db.VarChar(64)
+  /// Next 09:00 local time at which the daily digest is due (research R6).
+  nextDigestAt        DateTime           @default(now()) @map("next_digest_at") @db.Timestamptz(3)
+  emailStatus         EmailStatus        @default(OK) @map("email_status")
+  emailUnsubscribedAt DateTime?          @map("email_unsubscribed_at") @db.Timestamptz(3)
+  pushSubscriptions   PushSubscription[]
+  notices             Notice[]
+  deliveries          Delivery[]
+  createdAt           DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt           DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
+  @@index([nextDigestAt])
   @@map("profiles")
 }
 
@@ -114,6 +156,11 @@ model Vehicle {
   services             ServiceRecord[]
   maintenanceSettings  VehicleMaintenanceSetting[]
   maintenanceEstimates MaintenanceEstimate[]
+  /// Also send this vehicle's reminders by email (FR-007).
+  emailReminders       Boolean                     @default(false) @map("email_reminders")
+  lastKmReminderAt     DateTime?                   @map("last_km_reminder_at") @db.Timestamptz(3)
+  noticeStates         MaintenanceNoticeState[]
+  notices              Notice[]
   createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt            DateTime                    @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -171,6 +218,8 @@ model MaintenanceType {
   settings               VehicleMaintenanceSetting[]
   serviceItems           ServiceRecordItem[]
   estimates              MaintenanceEstimate[]
+  noticeStates           MaintenanceNoticeState[]
+  notices                Notice[]
 
   @@map("maintenance_types")
 }
@@ -250,4 +299,87 @@ model MaintenanceEstimate {
   @@id([vehicleId, typeCode])
   @@index([estimatedDueAt])
   @@map("maintenance_estimates")
+}
+
+model PushSubscription {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  user          Profile   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint      String    @unique @db.VarChar(2048)
+  p256dh        String    @db.VarChar(200)
+  auth          String    @db.VarChar(100)
+  userAgent     String?   @map("user_agent") @db.VarChar(300)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  lastSuccessAt DateTime? @map("last_success_at") @db.Timestamptz(3)
+  lastFailureAt DateTime? @map("last_failure_at") @db.Timestamptz(3)
+
+  @@index([userId])
+  @@map("push_subscriptions")
+}
+
+/// Notification cycle per vehicle and maintenance (research R7).
+model MaintenanceNoticeState {
+  vehicleId          String              @map("vehicle_id") @db.Uuid
+  vehicle            Vehicle             @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  typeCode           MaintenanceTypeCode @map("type_code")
+  type               MaintenanceType     @relation(fields: [typeCode], references: [code])
+  cycleSignature     String              @map("cycle_signature") @db.VarChar(200)
+  lastNotifiedStatus NotifiedStatus?     @map("last_notified_status")
+  updatedAt          DateTime            @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@id([vehicleId, typeCode])
+  @@map("maintenance_notice_states")
+}
+
+model Notice {
+  id             String               @id @default(uuid()) @db.Uuid
+  userId         String               @map("user_id") @db.Uuid
+  user           Profile              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicleId      String               @map("vehicle_id") @db.Uuid
+  vehicle        Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  kind           NoticeKind
+  /// Null for MILEAGE_UPDATE.
+  typeCode       MaintenanceTypeCode? @map("type_code")
+  type           MaintenanceType?     @relation(fields: [typeCode], references: [code])
+  cycleKey       String               @map("cycle_key") @db.VarChar(200)
+  remainingKm    Int?                 @map("remaining_km")
+  overdueDays    Int?                 @map("overdue_days")
+  estimatedDueAt DateTime?            @map("estimated_due_at") @db.Timestamptz(3)
+  createdAt      DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
+  deliveredAt    DateTime?            @map("delivered_at") @db.Timestamptz(3)
+  deliveries     DeliveryNotice[]
+
+  @@index([userId, deliveredAt])
+  @@index([createdAt])
+  @@map("notices")
+}
+
+model Delivery {
+  id                String           @id @default(uuid()) @db.Uuid
+  userId            String           @map("user_id") @db.Uuid
+  user              Profile          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel           DeliveryChannel
+  digestDate        DateTime         @map("digest_date") @db.Date
+  /// Push subscription id or "email".
+  target            String           @db.VarChar(64)
+  status            DeliveryStatus
+  providerMessageId String?          @map("provider_message_id") @db.VarChar(200)
+  error             String?          @db.VarChar(500)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  notices           DeliveryNotice[]
+
+  @@unique([userId, channel, digestDate, target])
+  @@index([providerMessageId])
+  @@index([createdAt])
+  @@map("deliveries")
+}
+
+model DeliveryNotice {
+  deliveryId String   @map("delivery_id") @db.Uuid
+  delivery   Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  noticeId   String   @map("notice_id") @db.Uuid
+  notice     Notice   @relation(fields: [noticeId], references: [id], onDelete: Cascade)
+
+  @@id([deliveryId, noticeId])
+  @@map("delivery_notices")
 }

@@ -1,29 +1,17 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (template, unversioned) → 1.0.0
-Bump rationale: Initial ratification; all placeholders replaced with project-specific content.
+Version change: 1.0.0 → 1.0.1
+Bump rationale: PATCH. Wording only: the UX/UI supervision rule in Principle IV now uses the
+normative "DEBEN" like the other rules, and typos were fixed ("supervisador" → "supervisados",
+"standares" → "estándares"). Its meaning is unchanged.
 
-Modified principles (template placeholder → new title):
-- [PRINCIPLE_1_NAME] → I. Fricción Cero en la Captura de Datos
-- [PRINCIPLE_2_NAME] → II. Tipado Estricto de Extremo a Extremo
-- [PRINCIPLE_3_NAME] → III. Escalabilidad por Diseño
-- [PRINCIPLE_4_NAME] → IV. Mobile-First y PWA Instalable
-- [PRINCIPLE_5_NAME] → V. Diseñado para Usuarios sin Experiencia Mecánica
-
-Added sections:
-- Visión Técnica (preamble)
-- Stack Tecnológico Obligatorio (was [SECTION_2_NAME])
-- Infraestructura y Servicios de Terceros (was [SECTION_3_NAME])
-- Governance (filled)
-
+Modified principles: IV. Mobile-First y PWA Instalable (wording)
+Added sections: none
 Removed sections: none
-
 Dependent templates read the constitution at runtime and were not modified.
-
 Follow-up TODOs: none
 -->
-
 # Car Checkup Constitution
 
 **Visión Técnica**: Plataforma de gestión de mantenimiento automotriz diseñada para usuarios
@@ -82,8 +70,9 @@ sobre toda la base de usuarios; su costo debe crecer de forma lineal y predecibl
 - La aplicación DEBE ser una PWA instalable (manifest válido, service worker, iconos) y
   ofrecer una experiencia usable con conectividad intermitente para los flujos de captura.
 - Los objetivos táctiles y la tipografía DEBEN cumplir tamaños mínimos legibles en móvil.
-- Los diseños de la interfaz deben de estar supervisador para cumplir los standares de calidad
-  de un experto UX/UI, y elegir un diseño sobrio, serio pero amigable para este tipo de contexto de la aplicación
+- Los diseños de la interfaz DEBEN estar supervisados para cumplir los estándares de calidad
+  de un experto UX/UI, y elegir un diseño sobrio, serio pero amigable para el contexto de la
+  aplicación.
 
 
 **Rationale**: El usuario registra datos junto a su vehículo, con el teléfono en la mano;
@@ -145,4 +134,4 @@ Sustituir cualquier componente de este stack requiere una enmienda a esta consti
 - **Revisión de cumplimiento**: al iniciar cada nueva feature se DEBE confirmar que la
   constitución sigue vigente para el alcance propuesto.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-20 | **Last Amended**: 2026-10-20
+**Version**: 1.0.1 | **Ratified**: 2026-10-20 | **Last Amended**: 2026-10-23

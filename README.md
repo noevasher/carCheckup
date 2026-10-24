@@ -75,7 +75,8 @@ Frontend en **Vercel**, API en **Render** y base de datos y login en **Supabase*
 
 1. **New → Blueprint**, elige el repo y la rama; Render lee `render.yaml`.
 2. Rellena las variables marcadas: `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`,
-   `SUPABASE_JWKS_URL` y `CORS_ORIGIN` (la URL de Vercel; si aún no la tienes, ponla después).
+   `SUPABASE_JWKS_URL` y `CORS_ORIGIN` (la URL de Vercel; si aún no la tienes, ponla después),
+   más las de recordatorios (paso 6). `UNSUBSCRIBE_SECRET` y `JOBS_SECRET` se generan solas.
 3. Al terminar, `https://<servicio>.onrender.com/health` debe responder `{"status":"ok"}`.
    En el plan gratuito el servicio se duerme tras 15 min sin uso; la primera petición tarda ~50 s.
 
@@ -83,8 +84,8 @@ Frontend en **Vercel**, API en **Render** y base de datos y login en **Supabase*
 
 1. **Add New → Project**, importa el repo. Deja la raíz del proyecto en la raíz del repo
    (Vercel usa `vercel.json`: genera el cliente Prisma, compila `frontend` y publica `frontend/dist`).
-2. Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (clave publishable o anon) y
-   `VITE_API_URL=https://<servicio>.onrender.com`.
+2. Variables: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (clave publishable o anon),
+   `VITE_API_URL=https://<servicio>.onrender.com` y `VITE_VAPID_PUBLIC_KEY` (paso 6).
 3. Vuelve a Render y pon la URL de Vercel en `CORS_ORIGIN` (varias URLs separadas por comas).
 
 ### 4. Supabase Auth
@@ -97,9 +98,30 @@ En **Authentication → URL Configuration**: **Site URL** = URL de Vercel, y añ
 Abre la URL de Vercel, pide el enlace mágico y ábrelo desde el correo en el mismo teléfono. Para
 instalarla: Safari → Compartir → "Añadir a pantalla de inicio"; Chrome → menú → "Instalar app".
 
+### 6. Recordatorios (feature 003)
+
+1. **Claves VAPID** (push): `npx web-push generate-vapid-keys`. En Render: `VAPID_PUBLIC_KEY`,
+   `VAPID_PRIVATE_KEY` y `VAPID_SUBJECT=mailto:tu@correo.com`; en Vercel, la misma clave pública
+   en `VITE_VAPID_PUBLIC_KEY`. Si cambias las claves, los dispositivos deben volver a suscribirse.
+2. **Resend** (correo): verifica tu dominio, crea una API key (`RESEND_API_KEY`) y define
+   `EMAIL_FROM` con ese dominio. En **Webhooks** añade
+   `https://<servicio>.onrender.com/webhooks/resend` con los eventos `email.bounced` y
+   `email.complained`, y copia el *signing secret* en `RESEND_WEBHOOK_SECRET`.
+3. En Render: `APP_URL` = URL de Vercel y `API_URL` = URL de Render.
+4. **Programador**: el workflow `.github/workflows/reminders.yml` llama cada hora (minuto 5) a
+   `POST /internal/jobs/reminders`. En GitHub → Settings → Secrets → Actions crea `API_URL`
+   (URL de Render) y `JOBS_SECRET` (el valor generado en Render). Pruébalo con **Run workflow**.
+   Cada usuario recibe como máximo un resumen al día, a las 09:00 de su zona horaria.
+5. En el iPhone las notificaciones solo funcionan con la app instalada en la pantalla de inicio
+   (iOS 16.4+); la app lo explica al registrar el primer vehículo.
+
 ### Notas
 
 - Las tablas tienen RLS activado sin políticas; solo el backend (propietario de las tablas) accede
   a los datos.
+- Los avisos y envíos de más de 12 meses se borran solos al final de cada pasada de recordatorios.
+- Prueba de carga de recordatorios (solo contra una base desechable):
+  `DATABASE_URL=<db de prueba> npx tsx prisma/seed/reminders-load.ts --users 100000 --parallel 3`
+  desde `backend/`.
 - Después de cualquier migración que cambie `maintenance_types`, ejecuta
   `npm run db:recompute-maintenance -w backend` con las variables de producción.

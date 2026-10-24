@@ -10,7 +10,9 @@
     "./errors": "./src/errors.ts",
     "./prisma": "./src/generated/prisma/client.ts",
     "./prisma/enums": "./src/generated/prisma/enums.ts",
-    "./maintenance": "./src/maintenance/index.ts"
+    "./maintenance": "./src/maintenance/index.ts",
+    "./i18n": "./src/i18n/index.ts",
+    "./reminders": "./src/reminders/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",

@@ -35,7 +35,7 @@ describe('auth', () => {
     const user = await ctx.userAgent();
     const res = await user.get('/v1/me');
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ id: user.userId, activeVehicleId: null });
+    expect(res.body).toEqual({ id: user.userId, activeVehicleId: null, emailStatus: 'OK', emailUnsubscribed: false });
   });
 });
 

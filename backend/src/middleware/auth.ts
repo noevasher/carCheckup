@@ -7,6 +7,7 @@ import { HttpError } from '../lib/http-error';
 const unauthorized = (): HttpError => new HttpError(401, 'UNAUTHORIZED');
 
 const Subject = z.uuid();
+const Email = z.email().max(320);
 
 /**
  * Verifies the Supabase access token locally against the project's JWKS (research R2).
@@ -27,6 +28,8 @@ export function authMiddleware(
       const sub = Subject.safeParse(payload.sub);
       if (!sub.success) throw unauthorized();
       req.userId = sub.data;
+      const email = Email.safeParse(payload['email']);
+      if (email.success) req.userEmail = email.data;
     } catch {
       throw unauthorized();
     }

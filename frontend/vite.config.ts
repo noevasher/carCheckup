@@ -9,6 +9,15 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Custom service worker with Web Push handlers (feature 003, research R2).
+      strategies: 'injectManifest',
+      srcDir: 'src/sw',
+      filename: 'sw.ts',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
+      },
+      // Service worker (and push) also in `npm run dev`.
+      devOptions: { enabled: true, type: 'module', navigateFallback: 'index.html' },
       includeAssets: ['icons/favicon.svg', 'icons/favicon.ico', 'icons/apple-touch-icon-180x180.png'],
       manifest: {
         name: 'Car Checkup',
@@ -33,12 +42,6 @@ export default defineConfig({
             purpose: 'maskable',
           },
         ],
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,webmanifest}'],
-        navigateFallback: '/index.html',
-        // API calls are never cached by the service worker; offline readings use IndexedDB.
-        navigateFallbackDenylist: [/^\/v1\//],
       },
     }),
   ],

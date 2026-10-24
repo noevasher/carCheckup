@@ -1,4 +1,5 @@
 import type { ApiErrorCode, ValidRange } from '@car-checkup/shared/errors';
+import { MAINTENANCE_NAMES_ES, MAINTENANCE_WHY_ES } from '@car-checkup/shared/i18n';
 import { formatKm } from '../lib/format';
 
 /** UI copy (Constitution, Principle V: plain, non-technical language). */
@@ -40,8 +41,10 @@ export const t = {
     offline: 'Sin conexión: guardaremos tu vehículo cuando vuelvas a tener señal.',
     retry: 'Reintentar',
     add: 'Añadir vehículo',
-    badgeOverdue: (n: number) => (n === 1 ? '1 mantenimiento vencido' : `${String(n)} mantenimientos vencidos`),
-    badgeUpcoming: (n: number) => (n === 1 ? '1 mantenimiento próximo' : `${String(n)} mantenimientos próximos`),
+    badgeOverdue: (n: number) =>
+      n === 1 ? '1 mantenimiento vencido' : `${String(n)} mantenimientos vencidos`,
+    badgeUpcoming: (n: number) =>
+      n === 1 ? '1 mantenimiento próximo' : `${String(n)} mantenimientos próximos`,
     uncatalogued: 'No está en nuestra lista; lo guardaremos tal cual lo escribiste.',
   },
   fuelType: { GASOLINE: 'Gasolina', DIESEL: 'Diésel', HYBRID: 'Híbrido', ELECTRIC: 'Eléctrico' },
@@ -54,7 +57,9 @@ export const t = {
     pendingSync: 'Pendiente de enviar',
     pendingSyncHint: 'Guardado en este teléfono. Se enviará solo cuando haya conexión.',
     review: (n: number) =>
-      n === 1 ? 'Hay 1 lectura que no cuadra con las demás. Revísala.' : `Hay ${String(n)} lecturas que no cuadran con las demás. Revísalas.`,
+      n === 1
+        ? 'Hay 1 lectura que no cuadra con las demás. Revísala.'
+        : `Hay ${String(n)} lecturas que no cuadran con las demás. Revísalas.`,
     reviewAction: 'Revisar',
     switcher: 'Tus vehículos',
   },
@@ -83,7 +88,8 @@ export const t = {
     empty: 'Aún no hay lecturas.',
     pending: 'Pendiente',
     needsReview: 'No cuadra',
-    needsReviewHint: 'Esta lectura no encaja con las anteriores o posteriores. Corrige el valor o la fecha, o elimínala.',
+    needsReviewHint:
+      'Esta lectura no encaja con las anteriores o posteriores. Corrige el valor o la fecha, o elimínala.',
     initial: 'Al registrar el vehículo',
     loadMore: 'Ver más',
     onlyReview: 'Solo las que no cuadran',
@@ -120,38 +126,10 @@ export const t = {
     disabledTitle: 'Desactivados',
     enable: 'Reactivar',
     services: 'Historial de servicios',
-    disclaimer: 'Intervalos generales para turismos. Si tu manual o tu taller indican otros, puedes ajustarlos.',
-    names: {
-      OIL_CHANGE: 'Cambio de aceite y filtro',
-      ENGINE_AIR_FILTER: 'Filtro de aire del motor',
-      CABIN_AIR_FILTER: 'Filtro de aire de cabina',
-      TIRE_ROTATION: 'Rotación de llantas',
-      ALIGNMENT_BALANCING: 'Alineación y balanceo',
-      TIRE_REPLACEMENT: 'Cambio de llantas',
-      BRAKE_INSPECTION: 'Revisión de frenos',
-      BRAKE_FLUID: 'Cambio de líquido de frenos',
-      COOLANT: 'Cambio de anticongelante',
-      SPARK_PLUGS: 'Cambio de bujías',
-      TIMING_BELT: 'Banda de distribución',
-      TRANSMISSION_FLUID: 'Aceite de transmisión',
-      BATTERY_CHECK: 'Revisión de batería',
-    },
-    whyText: {
-      OIL_CHANGE: 'El aceite protege el motor del desgaste. Con el uso pierde sus propiedades y el filtro se satura.',
-      ENGINE_AIR_FILTER: 'Evita que entre polvo al motor. Sucio, el coche gasta más combustible y pierde fuerza.',
-      CABIN_AIR_FILTER: 'Limpia el aire que respiras dentro del coche y ayuda a que el aire acondicionado funcione bien.',
-      TIRE_ROTATION: 'Cambiar las llantas de posición hace que se gasten parejo y duren más.',
-      ALIGNMENT_BALANCING: 'Mantiene el coche recto y sin vibraciones; evita que las llantas se gasten de un lado.',
-      TIRE_REPLACEMENT: 'Las llantas gastadas o viejas agarran menos el piso, sobre todo con lluvia.',
-      BRAKE_INSPECTION: 'Revisar balatas (pastillas) y discos a tiempo evita frenadas largas y reparaciones caras.',
-      BRAKE_FLUID: 'El líquido de frenos absorbe humedad con el tiempo y frena peor aunque no uses mucho el coche.',
-      COOLANT: 'El anticongelante evita que el motor se sobrecaliente o se congele y protege contra la corrosión.',
-      SPARK_PLUGS: 'Las bujías encienden el combustible. Gastadas, el motor arranca mal y consume más.',
-      TIMING_BELT:
-        'Sincroniza las piezas internas del motor; si se rompe, la reparación es muy cara. Algunos motores usan cadena en lugar de banda: si es tu caso, puedes desactivar este mantenimiento.',
-      TRANSMISSION_FLUID: 'Lubrica la caja de cambios para que los cambios entren suaves y no se desgaste.',
-      BATTERY_CHECK: 'Una revisión anual evita quedarte sin arranque, sobre todo en frío o calor extremos.',
-    },
+    disclaimer:
+      'Intervalos generales para turismos. Si tu manual o tu taller indican otros, puedes ajustarlos.',
+    names: MAINTENANCE_NAMES_ES,
+    whyText: MAINTENANCE_WHY_ES,
     explain: {
       interval: {
         DEFAULT: (every: string) => `Se recomienda cada ${every}.`,
@@ -160,18 +138,25 @@ export const t = {
         CUSTOM: (every: string) => `Lo tienes configurado cada ${every} (intervalo personalizado).`,
       },
       baseline: {
-        SERVICE: (km: string, date: string) => `La última vez lo registraste el ${date}, con ${km}.`,
-        PRIOR: (km: string, date: string) => `Nos dijiste que la última vez fue hacia el ${date}, con unos ${km}.`,
+        SERVICE: (km: string, date: string) =>
+          `La última vez lo registraste el ${date}, con ${km}.`,
+        PRIOR: (km: string, date: string) =>
+          `Nos dijiste que la última vez fue hacia el ${date}, con unos ${km}.`,
         VEHICLE_REGISTRATION: (km: string, date: string) =>
           `Lo calculamos desde que registraste el vehículo (${date}, ${km}). Indica cuándo se hizo para afinarlo.`,
       },
       current: (km: string) => `Ahora tiene ${km}.`,
-      paceReadings: (km: string, days: string) => `Recorres unos ${km} al día según tus lecturas de los últimos ${days}.`,
-      paceUsage: (km: string, usage: string) => `Estimamos unos ${km} al día por tu uso en ${usage}; se ajustará cuando registres más kilometraje.`,
-      paceUnknown: (km: string) => `Estimamos unos ${km} al día; se ajustará cuando registres más kilometraje.`,
-      parked: 'El vehículo no se ha movido según tus lecturas; la fecha dependerá de cuándo vuelvas a usarlo.',
+      paceReadings: (km: string, days: string) =>
+        `Recorres unos ${km} al día según tus lecturas de los últimos ${days}.`,
+      paceUsage: (km: string, usage: string) =>
+        `Estimamos unos ${km} al día por tu uso en ${usage}; se ajustará cuando registres más kilometraje.`,
+      paceUnknown: (km: string) =>
+        `Estimamos unos ${km} al día; se ajustará cuando registres más kilometraje.`,
+      parked:
+        'El vehículo no se ha movido según tus lecturas; la fecha dependerá de cuándo vuelvas a usarlo.',
       dueKm: (km: string, date: string) => `Llegarás a ${km} hacia el ${date}.`,
-      limitTime: (date: string) => `Por tiempo, toca a más tardar el ${date}, y eso llega antes que el kilometraje.`,
+      limitTime: (date: string) =>
+        `Por tiempo, toca a más tardar el ${date}, y eso llega antes que el kilometraje.`,
       limitKm: 'El kilometraje llegará antes que el plazo por tiempo.',
       usage: { CITY: 'ciudad', HIGHWAY: 'carretera', MIXED: 'mixto' },
     },
@@ -219,6 +204,43 @@ export const t = {
     },
     readingSourceService: 'Al registrar un servicio',
   },
+  notifications: {
+    emailToggle: 'Recibir también los avisos por correo',
+    emailToggleHint: 'Las notificaciones en el teléfono se envían siempre.',
+    promptTitle: 'Activa los avisos de mantenimiento',
+    promptBody:
+      'Te avisaremos en este teléfono cuando un mantenimiento se acerque o venza, y cuando toque actualizar el kilometraje. Como máximo, un aviso al día.',
+    promptAllow: 'Activar notificaciones',
+    promptLater: 'Ahora no',
+    installTitle: 'Instala la app para recibir avisos',
+    installBody:
+      'En iPhone las notificaciones solo llegan con la app instalada: toca Compartir y luego "Añadir a pantalla de inicio". Después ábrela desde el icono.',
+    installOk: 'Entendido',
+    emailQuestionTitle: '¿Quieres recibir los avisos por correo?',
+    emailQuestionBody:
+      'No podremos avisarte en este teléfono. Podemos enviarte los avisos de este vehículo por correo.',
+    emailYes: 'Sí, por correo',
+    emailNo: 'No, gracias',
+    enableOnDevice: 'Activar notificaciones en este dispositivo',
+    enabled: 'Notificaciones activadas en este dispositivo.',
+    blocked:
+      'Las notificaciones están bloqueadas en este dispositivo. Puedes permitirlas en los ajustes del navegador.',
+    badEmail: (email: string) =>
+      `No pudimos entregar correos a ${email}. Revisa tu dirección de correo.`,
+    badEmailNoAddress: 'No pudimos entregar tus correos. Revisa tu dirección de correo.',
+    unsubscribe: {
+      title: 'Dejar de recibir correos',
+      body: 'Dejarás de recibir los avisos de mantenimiento por correo. Las notificaciones en tu teléfono no cambian.',
+      confirm: 'Confirmar baja',
+      done: 'Listo, ya no recibirás avisos por correo.',
+      openApp: 'Ir a Car Checkup',
+      undo: 'Deshacer',
+      undone: 'Hecho: volverás a recibir los avisos por correo.',
+      invalid:
+        'Este enlace no es válido. Puedes gestionar los correos desde la app, en cada vehículo.',
+      error: 'No pudimos completar la acción. Inténtalo de nuevo en un momento.',
+    },
+  },
   common: {
     back: 'Volver',
     cancel: 'Cancelar',
@@ -233,7 +255,10 @@ const plural = (n: number, one: string, many: string) => `${String(n)} ${n === 1
 export const daysLabel = (days: number) => plural(Math.max(1, Math.round(days)), 'día', 'días');
 
 /** Message for an API error code (FR-015). */
-export function messageForError(code: ApiErrorCode | 'NETWORK' | undefined, validRange?: ValidRange): string {
+export function messageForError(
+  code: ApiErrorCode | 'NETWORK' | undefined,
+  validRange?: ValidRange,
+): string {
   switch (code) {
     case 'NETWORK':
       return 'No hay conexión. Inténtalo de nuevo cuando tengas señal.';
@@ -242,7 +267,9 @@ export function messageForError(code: ApiErrorCode | 'NETWORK' | undefined, vali
     case 'NOT_FOUND':
       return 'Ese vehículo o lectura ya no existe.';
     case 'READING_OUT_OF_ORDER':
-      return validRange !== undefined ? outOfOrderMessage(validRange) : 'El kilometraje no cuadra con tus otras lecturas.';
+      return validRange !== undefined
+        ? outOfOrderMessage(validRange)
+        : 'El kilometraje no cuadra con tus otras lecturas.';
     case 'UNUSUAL_DISTANCE':
       return 'Es una distancia muy grande para tan poco tiempo. Confírmala o corrígela.';
     case 'LAST_READING_UNDELETABLE':

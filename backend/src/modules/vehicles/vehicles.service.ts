@@ -62,6 +62,7 @@ export async function createVehicle(
         licensePlate: input.licensePlate ?? null,
         fuelType: input.fuelType ?? null,
         usageType: input.usageType ?? null,
+        emailReminders: input.emailReminders ?? false,
         currentOdometerKm: input.odometerKm,
         lastReadingAt: now,
         readings: {
@@ -127,6 +128,7 @@ export async function updateVehicle(
         ...(input.licensePlate !== undefined && { licensePlate: input.licensePlate }),
         ...(input.fuelType !== undefined && { fuelType: input.fuelType }),
         ...(input.usageType !== undefined && { usageType: input.usageType }),
+        ...(input.emailReminders !== undefined && { emailReminders: input.emailReminders }),
       },
       include: pendingReviewCountInclude,
     });

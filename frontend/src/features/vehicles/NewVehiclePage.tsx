@@ -23,7 +23,8 @@ export function NewVehiclePage() {
       {
         onSuccess: (vehicle) => {
           storeActiveVehicle(userId, vehicle.id);
-          void navigate('/', { replace: true });
+          // The home screen then asks for notifications / email (feature 003, FR-008).
+          void navigate('/', { replace: true, state: { newVehicleId: vehicle.id } });
         },
       },
     );

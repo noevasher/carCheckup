@@ -4,6 +4,8 @@ const EnvSchema = z.object({
   VITE_SUPABASE_URL: z.url(),
   VITE_SUPABASE_ANON_KEY: z.string().check(z.minLength(1)),
   VITE_API_URL: z.url(),
+  /** Web Push public key (feature 003); without it push is reported as unsupported. */
+  VITE_VAPID_PUBLIC_KEY: z.optional(z.string().check(z.minLength(20))),
 });
 
 /** Thrown when frontend/.env is missing or invalid; main.tsx renders it instead of a blank page. */

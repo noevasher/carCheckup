@@ -29,6 +29,8 @@ const vehicleFields = {
   licensePlate: optionalText(15, (v) => v.toUpperCase()),
   fuelType: z.enum(FuelType).nullable().optional(),
   usageType: z.enum(UsageType).nullable().optional(),
+  /** Also send this vehicle's reminders by email (feature 003, FR-007). */
+  emailReminders: z.boolean().optional(),
 };
 
 export const VehicleCreateSchema = z.object({
@@ -48,6 +50,7 @@ export const VehicleUpdateSchema = z
     licensePlate: vehicleFields.licensePlate,
     fuelType: vehicleFields.fuelType,
     usageType: vehicleFields.usageType,
+    emailReminders: vehicleFields.emailReminders,
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), { message: 'empty' });
 export type VehicleUpdateInput = z.infer<typeof VehicleUpdateSchema>;

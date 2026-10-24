@@ -5,6 +5,7 @@ import { messageForError, t } from '../../i18n/es';
 import { ApiRequestError } from '../../lib/api';
 import { useUserId } from '../auth/AuthProvider';
 import { useDeleteVehicle, useUpdateVehicle, useVehicle, useVehicles } from './api';
+import { EnableNotificationsButton } from '../notifications/EnableNotificationsButton';
 import { storeActiveVehicle } from './useActiveVehicle';
 import { VehicleForm, type VehicleFormValues } from './VehicleForm';
 
@@ -35,6 +36,7 @@ export function EditVehiclePage() {
         licensePlate: values.licensePlate,
         fuelType: values.fuelType,
         usageType: values.usageType,
+        emailReminders: values.emailReminders,
       },
       { onSuccess: () => void navigate('/') },
     );
@@ -67,12 +69,14 @@ export function EditVehiclePage() {
           licensePlate: v.licensePlate ?? '',
           fuelType: v.fuelType,
           usageType: v.usageType,
+          emailReminders: v.emailReminders,
         }}
         submitting={update.isPending}
         submitError={update.error}
         onSubmit={submit}
         footer={
-          <div className="mt-6 border-t border-border pt-6">
+          <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6">
+            <EnableNotificationsButton />
             <Button
               variant="danger"
               block

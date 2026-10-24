@@ -2,6 +2,7 @@ export type { Serialized } from './serialized';
 export type { VehicleDto, VehicleListDto } from './vehicle';
 export type { MileageReadingDto, ReadingResultDto, ReadingPageDto } from './reading';
 export type { ProfileDto } from './profile';
+export type { JobResultDto, UnsubscribeResultDto } from './notifications';
 export type { CatalogMakeDto, CatalogModelDto, CatalogListDto } from './catalog';
 export type {
   MaintenanceStatusDto,
@@ -14,6 +15,8 @@ export type {
   ServicePageDto,
 } from './maintenance';
 export type {
+  EmailStatus,
+  NoticeKind,
   MaintenanceTypeCode,
   BaselineSource,
   IntervalSource,

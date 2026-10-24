@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { signInAsNewUser } from './support/session';
+import { dismissNotificationsPrompt } from './support/notifications';
 
 /**
  * Screenshots of the maintenance screens for the UX/UI review
@@ -21,6 +22,7 @@ for (const scheme of ['light', 'dark'] as const) {
       await page.getByLabel('Kilometraje actual').fill(km);
       await page.getByRole('button', { name: 'Guardar vehículo' }).click();
       await expect(page).toHaveURL('/');
+      await dismissNotificationsPrompt(page);
     };
 
     await register('Toyota', 'Corolla', '45000');

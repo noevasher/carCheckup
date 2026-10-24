@@ -25,6 +25,7 @@ export function toVehicleDto(
     licensePlate: vehicle.licensePlate,
     fuelType: vehicle.fuelType,
     usageType: vehicle.usageType,
+    emailReminders: vehicle.emailReminders,
     currentOdometerKm: vehicle.currentOdometerKm,
     lastReadingAt: vehicle.lastReadingAt.toISOString(),
     createdAt: vehicle.createdAt.toISOString(),

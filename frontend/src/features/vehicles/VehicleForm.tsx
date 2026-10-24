@@ -19,6 +19,7 @@ export interface VehicleFormValues {
   licensePlate: string | null;
   fuelType: FuelType | null;
   usageType: UsageType | null;
+  emailReminders: boolean;
 }
 
 export interface VehicleFormInitial {
@@ -29,6 +30,7 @@ export interface VehicleFormInitial {
   licensePlate: string;
   fuelType: FuelType | null;
   usageType: UsageType | null;
+  emailReminders: boolean;
 }
 
 const emptyInitial: VehicleFormInitial = {
@@ -39,6 +41,7 @@ const emptyInitial: VehicleFormInitial = {
   licensePlate: '',
   fuelType: null,
   usageType: null,
+  emailReminders: false,
 };
 
 interface VehicleFormProps {
@@ -75,6 +78,7 @@ export function VehicleForm({
   const [licensePlate, setLicensePlate] = useState(initial.licensePlate);
   const [fuelType, setFuelType] = useState<FuelType | null>(initial.fuelType);
   const [usageType, setUsageType] = useState<UsageType | null>(initial.usageType);
+  const [emailReminders, setEmailReminders] = useState(initial.emailReminders);
   const [showMore, setShowMore] = useState(
     mode === 'edit' && (initial.nickname !== '' || initial.licensePlate !== '' || initial.fuelType !== null),
   );
@@ -131,6 +135,7 @@ export function VehicleForm({
       licensePlate: data.licensePlate ?? null,
       fuelType: data.fuelType ?? null,
       usageType: data.usageType ?? null,
+      emailReminders,
     });
   }
 
@@ -197,6 +202,8 @@ export function VehicleForm({
           />
         )}
       </div>
+
+      <EmailRemindersSwitch checked={emailReminders} onChange={setEmailReminders} />
 
       <div className="rounded-card border border-border">
         <button
@@ -311,5 +318,40 @@ function ChoiceGroup<T extends string>({
         })}
       </div>
     </fieldset>
+  );
+}
+
+/** "Recibir también los avisos por correo" (feature 003, FR-007): off by default; push is always on. */
+function EmailRemindersSwitch({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-card border border-border px-4 py-3">
+      <div>
+        <p id="email-reminders-label" className="font-medium">
+          {t.notifications.emailToggle}
+        </p>
+        <p className="text-sm text-text-muted">{t.notifications.emailToggleHint}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby="email-reminders-label"
+        onClick={() => {
+          onChange(!checked);
+        }}
+        className={cx(
+          'relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors',
+          checked ? 'bg-primary' : 'bg-border',
+        )}
+      >
+        <span
+          aria-hidden
+          className={cx(
+            'inline-block size-6 rounded-full bg-surface shadow transition-transform',
+            checked ? 'translate-x-7' : 'translate-x-1',
+          )}
+        />
+      </button>
+    </div>
   );
 }

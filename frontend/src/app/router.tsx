@@ -18,6 +18,13 @@ export const router = createBrowserRouter([
     HydrateFallback: PageLoading,
     children: [
       {
+        // Public: email unsubscribe link (feature 003, FR-014).
+        path: '/unsubscribe',
+        lazy: async () => ({
+          Component: (await import('../features/notifications/UnsubscribePage')).UnsubscribePage,
+        }),
+      },
+      {
         path: '/login',
         lazy: async () => ({ Component: (await import('../features/auth/LoginPage')).LoginPage }),
       },

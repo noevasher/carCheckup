@@ -13,7 +13,7 @@ export async function createTestContext() {
   const app = createApp({ jwks: createLocalJWKSet({ keys: [jwk] }), rateLimit: false });
 
   async function tokenFor(userId: string, overrides: { issuer?: string } = {}): Promise<string> {
-    return new SignJWT({ role: 'authenticated' })
+    return new SignJWT({ role: 'authenticated', email: `${userId}@test.dev` })
       .setProtectedHeader({ alg: 'ES256', kid: 'test' })
       .setSubject(userId)
       .setIssuer(overrides.issuer ?? ISSUER)

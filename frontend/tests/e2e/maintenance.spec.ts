@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page, test } from '@playwright/test';
 import { E2E } from './support/config';
 import { signInAsNewUser } from './support/session';
+import { dismissNotificationsPrompt } from './support/notifications';
 
 /** Quickstart scenarios of specs/002-maintenance-estimation/quickstart.md (mobile viewport). */
 
@@ -19,6 +20,7 @@ async function registerVehicle(
   }
   await page.getByRole('button', { name: 'Guardar vehículo' }).click();
   await expect(page).toHaveURL('/');
+  await dismissNotificationsPrompt(page);
 }
 
 async function captureKm(page: Page, km: string, { unusual = false } = {}) {

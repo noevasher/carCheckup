@@ -1,0 +1,28 @@
+# Feature 003: triggers the reminders job every hour (each user is processed on the first run
+# after their local 09:00). The API does the work; this only calls the protected endpoint.
+# Repository secrets: API_URL (https://<servicio>.onrender.com) and JOBS_SECRET.
+name: reminders
+
+on:
+  schedule:
+    - cron: '5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: reminders
+  cancel-in-progress: false
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Run reminders job
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          JOBS_SECRET: ${{ secrets.JOBS_SECRET }}
+        run: |
+          # The free Render plan sleeps: the first request can take ~50 s to wake it up.
+          curl --fail-with-body --silent --show-error --retry 3 --retry-delay 20 --retry-all-errors \
+            --max-time 600 -X POST -H "Authorization: Bearer ${JOBS_SECRET}" \
+            "${API_URL}/internal/jobs/reminders?budgetMs=540000"

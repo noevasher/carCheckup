@@ -13,6 +13,13 @@ export default defineConfig({
       SUPABASE_JWKS_URL: 'http://supabase.test/auth/v1/.well-known/jwks.json',
       CORS_ORIGIN: 'http://localhost:5173',
       UNUSUAL_KM_PER_DAY: '1500',
+      APP_URL: 'http://app.test',
+      API_URL: 'http://api.test',
+      EMAIL_PROVIDER: 'log',
+      EMAIL_FROM: 'Car Checkup <avisos@example.com>',
+      RESEND_WEBHOOK_SECRET: 'whsec_dGVzdC13ZWJob29rLXNlY3JldC0wMTIzNDU2Nzg5',
+      UNSUBSCRIBE_SECRET: 'test-unsubscribe-secret-0123456789abcdef',
+      JOBS_SECRET: 'test-jobs-secret-0123456789abcdef0123',
     },
   },
 });

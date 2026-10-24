@@ -10,8 +10,9 @@ const MAX_LENGTH = 64;
  */
 export function timezoneMiddleware(req: Request, _res: Response, next: NextFunction): void {
   const header = req.get('x-timezone');
-  req.timeZone =
-    header !== undefined && header.length <= MAX_LENGTH && isValidTimeZone(header) ? header : 'UTC';
+  const valid = header !== undefined && header.length <= MAX_LENGTH && isValidTimeZone(header);
+  req.timeZone = valid ? header : 'UTC';
+  req.timeZoneFromHeader = valid;
   next();
 }
 

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { signInAsNewUser } from './support/session';
+import { dismissNotificationsPrompt } from './support/notifications';
 
 /**
  * Captures every screen for the UX/UI review (checklists/ux-review.md).
@@ -30,6 +31,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await shot('02-new-vehicle-filled');
     await page.getByRole('button', { name: 'Guardar vehículo' }).click();
     await expect(page).toHaveURL('/');
+    await dismissNotificationsPrompt(page);
     await shot('03-home');
 
     await page.getByRole('button', { name: 'Actualizar km' }).click();
@@ -51,6 +53,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.getByLabel('Kilometraje actual').fill('120000');
     await page.getByRole('button', { name: 'Guardar vehículo' }).click();
     await expect(page).toHaveURL('/');
+    await dismissNotificationsPrompt(page);
     await page.getByRole('button', { name: 'Toyota Corolla' }).click();
     await shot('06-home-two-vehicles');
 

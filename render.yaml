@@ -32,3 +32,39 @@ services:
       # Frontend URL(s), comma separated, e.g. https://car-checkup.vercel.app
       - key: CORS_ORIGIN
         sync: false
+      # --- Recordatorios (feature 003) ---
+      # URL de la PWA (enlaces de avisos) y de este API (baja en un clic de los correos)
+      - key: APP_URL
+        sync: false
+      - key: API_URL
+        sync: false
+      # npx web-push generate-vapid-keys
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: resend
+      # p. ej. "Car Checkup <avisos@tudominio.com>" (dominio verificado en Resend)
+      - key: EMAIL_FROM
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_WEBHOOK_SECRET
+        sync: false
+      - key: UNSUBSCRIBE_SECRET
+        generateValue: true
+      # Copia este valor al secreto JOBS_SECRET de GitHub Actions
+      - key: JOBS_SECRET
+        generateValue: true
+
+  # Alternative to the GitHub Actions scheduler on a paid plan (Render cron jobs are not free):
+  # - type: cron
+  #   name: car-checkup-reminders
+  #   runtime: node
+  #   schedule: "5 * * * *"
+  #   buildCommand: npm ci --include=dev && npm run db:generate -w backend
+  #   startCommand: npm run job:reminders -w backend
+  #   envVars: same as the API (DATABASE_URL, VAPID_*, EMAIL_*, RESEND_*, APP_URL, API_URL, UNSUBSCRIBE_SECRET)

@@ -1,5 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 import { signInAsNewUser } from './support/session';
+import { dismissNotificationsPrompt } from './support/notifications';
 
 /** Quickstart scenarios (specs/001-vehicles-mileage/quickstart.md) on a mobile viewport. */
 
@@ -13,6 +14,7 @@ async function registerVehicle(
   await page.getByLabel('Kilometraje actual').fill(km);
   await page.getByRole('button', { name: 'Guardar vehículo' }).click();
   await expect(page).toHaveURL('/');
+  await dismissNotificationsPrompt(page);
 }
 
 async function captureKm(page: Page, km: string) {
@@ -44,6 +46,7 @@ test('1–2: a user without vehicles lands on registration and registers from th
   await page.getByRole('button', { name: 'Guardar vehículo' }).click();
 
   await expect(page).toHaveURL('/');
+  await dismissNotificationsPrompt(page);
   await expect(page.getByRole('heading', { name: 'Toyota Corolla' })).toBeVisible();
   await expect(page.getByText('45.000 km')).toBeVisible();
 });

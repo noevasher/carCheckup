@@ -2,11 +2,16 @@ import { randomUUID } from 'node:crypto';
 import type { Page } from '@playwright/test';
 import { E2E } from './config';
 
-/** Signs in a brand-new user by storing a Supabase-format session before the app loads. */
-export async function signInAsNewUser(page: Page): Promise<string> {
-  const userId = randomUUID();
+/** Signed access token for a test user (from the local auth emulator). */
+export async function tokenFor(userId: string): Promise<string> {
   const res = await fetch(`${E2E.authUrl}/test/token?sub=${userId}`);
   const { token } = (await res.json()) as { token: string };
+  return token;
+}
+
+/** Signs in a user (new by default) by storing a Supabase-format session before the app loads. */
+export async function signInAsNewUser(page: Page, userId: string = randomUUID()): Promise<string> {
+  const token = await tokenFor(userId);
   const now = Math.floor(Date.now() / 1000);
   const session = {
     access_token: token,

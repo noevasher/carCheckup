@@ -109,7 +109,8 @@ instalarla: Safari → Compartir → "Añadir a pantalla de inicio"; Chrome → 
    `email.complained`, y copia el *signing secret* en `RESEND_WEBHOOK_SECRET`.
 3. En Render: `APP_URL` = URL de Vercel y `API_URL` = URL de Render.
 4. **Programador**: el workflow `.github/workflows/reminders.yml` llama cada hora (minuto 5) a
-   `POST /internal/jobs/reminders`. En GitHub → Settings → Secrets → Actions crea `API_URL`
+   `POST /internal/jobs/reminders`. La ejecución programada viene **pausada**: cuando el API esté
+   desplegado, descomenta `schedule` en ese archivo. En GitHub → Settings → Secrets → Actions crea `API_URL`
    (URL de Render) y `JOBS_SECRET` (el valor generado en Render). Pruébalo con **Run workflow**.
    Cada usuario recibe como máximo un resumen al día, a las 09:00 de su zona horaria.
 5. En el iPhone las notificaciones solo funcionan con la app instalada en la pantalla de inicio

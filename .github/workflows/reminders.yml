@@ -4,8 +4,10 @@
 name: reminders
 
 on:
-  schedule:
-    - cron: '5 * * * *'
+  # Hourly schedule paused until the API is deployed and the secrets exist (no failure emails).
+  # To enable it again, uncomment these two lines.
+  # schedule:
+  #   - cron: '5 * * * *'
   workflow_dispatch:
 
 concurrency:
@@ -22,6 +24,10 @@ jobs:
           API_URL: ${{ secrets.API_URL }}
           JOBS_SECRET: ${{ secrets.JOBS_SECRET }}
         run: |
+          if [ -z "${API_URL}" ] || [ -z "${JOBS_SECRET}" ]; then
+            echo "API_URL or JOBS_SECRET not configured: skipping."
+            exit 0
+          fi
           # The free Render plan sleeps: the first request can take ~50 s to wake it up.
           curl --fail-with-body --silent --show-error --retry 3 --retry-delay 20 --retry-all-errors \
             --max-time 600 -X POST -H "Authorization: Bearer ${JOBS_SECRET}" \
